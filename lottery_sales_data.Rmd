@@ -57,19 +57,7 @@ lott %>%
 lott_clean
 ```
 
-
-## 1.2. graph: sales
-
-```{r, fig.height=5, fig.width=15}
-ggplot(data = lott_clean,
-       aes(x = date,
-           y = sales)) +
-  geom_point() +
-  geom_line()
-
-```
-
-## 1.3. graph: just jackpot
+## 1.2. graph: just jackpot
 
 ```{r, fig.height=5, fig.width=15}
 ggplot(data = lott_clean,
@@ -80,7 +68,31 @@ ggplot(data = lott_clean,
 
 ```
 
-## 2. Sales & Jackpot Combined
+# 1.3. jackpot quantiles (in millions)
+
+```{r}
+quantile(round(lott_clean$jackpot/1e6, digits = 1), probs = c(0, 0.01, 0.05, seq(0.1, 0.9, 0.1), 0.95, 0.99, 1))
+```
+
+## 1.4. graph: sales
+
+```{r, fig.height=5, fig.width=15}
+ggplot(data = lott_clean,
+       aes(x = date,
+           y = sales)) +
+  geom_point() +
+  geom_line()
+
+```
+
+## 1.5. sales quantiles (in millions)
+
+```{r}
+quantile(round(lott_clean$sales/1e6, digits = 1), probs = c(0, 0.01, 0.05, seq(0.1, 0.9, 0.1), 0.95, 0.99, 1))
+```
+
+
+# 2. Sales & Jackpot Combined
 
 Very useful resource, for dual y-axis graphs
 https://www.r-graph-gallery.com/line-chart-dual-Y-axis-ggplot2.html
@@ -88,7 +100,7 @@ https://www.r-graph-gallery.com/line-chart-dual-Y-axis-ggplot2.html
 Very useful resource for date formatting in ggplot
 https://www.r-graph-gallery.com/279-plotting-time-series-with-ggplot2.html
 
-### 2.1. graph: w/ outlier
+## 2.1. graph: w/ outlier
 
 ```{r, fig.height=7, fig.width=15}
 coeff <- max(lott_clean$jackpot)/max(lott_clean$sales)
@@ -128,7 +140,7 @@ plot_2c
 
 ```
 
-### 2.1. save
+## 2.1. save
 
 ```{r}
 ggsave(plot = plot_2c,
@@ -138,7 +150,7 @@ ggsave(plot = plot_2c,
 ```
 
 
-### 2.2. graph: w/o outlier
+## 2.2. graph: w/o outlier
 
 ```{r, fig.height=7, fig.width=15}
 coeff <- 3.5 #max(lott_clean$jackpot)/max(lott_clean$sales)
@@ -179,7 +191,7 @@ plot_2d
 ```
 
 
-### 2.2. save
+## 2.2. save
 
 ```{r}
 ggsave(plot = plot_2d,
@@ -205,7 +217,8 @@ http://www.durangobill.com/MegaMillionsOdds.html
 
 ```{r}
 prob_k <- function(num_winners, num_tickets, prob_win){
-  return(choose(n = num_tickets, k = num_winners) * prob_win^num_winners * (1-prob_win)^(num_tickets-num_winners))
+  #return(choose(n = num_tickets, k = num_winners) * prob_win^num_winners * (1-prob_win)^(num_tickets-num_winners))
+  return(dbinom(size = num_tickets, x = num_winners, prob = prob_win)) #(same as above)
 }
 ```
 
@@ -235,20 +248,34 @@ inputs:
 -- number of tickets sold
 -- max number of potential winners to consider
 -- probability of winning jackpot
+-- (also: method of computing probability, summing or inverse of non-winners)
+-- (also: whether pot is to be split)
 outputs:
 -- expected value of a ticket (incorporating odds and payout if split ticket)
 
 ```{r}
-ev_split <- function(jackpot, tickets, max_winners, prob_win){
+ev_split <- function(jackpot, tickets, max_winners, prob_win, method, split){
   
-  ev <- 0
-  for (n in 1:max_winners){
-    ev <- ev + (jackpot/n * prob_k(num_winners = n, num_tickets = tickets, prob_win = prob_win))
-    #print(n)
-    #print(jackpot/n)
-    #print(prob_k(num_winners = n, num_tickets = tickets, prob_win = prob_win))
-    #print(ev)
-    #print("---")
+  # 
+  if (method == "inverse" & split == TRUE){
+    ev <- jackpot * (1 - prob_k(num_winners = 0, num_tickets = tickets, prob_win = prob_win))
+  }
+  
+  if (method == "inverse" & split == FALSE){
+    return("nah, this combo (inverse & no split) doesn't make sense")
+  }
+  
+  if (method == "sum"){
+    ev <- 0
+    for (n in 1:max_winners){
+      if (split == TRUE){
+      ev <- ev + ((jackpot/n)*n * prob_k(num_winners = n, num_tickets = tickets, prob_win = prob_win))
+      #ev <- ev + ((jackpot/n)*n * dbinom(size = n, x = tickets, prob = prob_win)) #(same as above)
+      }
+      if (split == FALSE){
+      ev <- ev + ((jackpot/1)*n * prob_k(num_winners = n, num_tickets = tickets, prob_win = prob_win))
+      }
+    }
   }
   
   return(ev/tickets)
@@ -261,12 +288,73 @@ ev_split <- function(jackpot, tickets, max_winners, prob_win){
 ## 3.2. test
 
 ```{r}
-ev_split(jackpot = 400e6, tickets = 300e6, max_winners = 10, prob_win = (1/302575350))
-ev_split(jackpot = 850e6, tickets = 300e6, max_winners = 10, prob_win = (1/302575350))
+print("---1---")
+850e6*(1/302575350)
+print("---2---")
+t1 <- Sys.time()
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 1, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 2, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 5, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 100, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 1e6, prob_win = (1/302575350), method = "sum", split = TRUE)
+Sys.time() - t1
+print("---3---")
+ev_split(jackpot = 850e6, tickets = 200e6, max_winners = 1, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 200e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+print("---4---")
+ev_split(jackpot = 400e6, tickets = 300e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+# check against: http://www.durangobill.com/MegaMillionsOdds.html
+0.8386
+400e6*(1-prob_k(num_winners = 0, num_tickets = 300e6, prob_win = (1/302575350)))/300e6
+print("---5---")
+t1 <- Sys.time()
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 1, prob_win = (1/302575350), method = "inverse", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 2, prob_win = (1/302575350), method = "inverse", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 5, prob_win = (1/302575350), method = "inverse", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 10, prob_win = (1/302575350), method = "inverse", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 100, prob_win = (1/302575350), method = "inverse", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 1e6, prob_win = (1/302575350), method = "inverse", split = TRUE)
+Sys.time() - t1
+print("---6---")
+ev_split(jackpot = 850e6, tickets = 200e6, max_winners = 1, prob_win = (1/302575350), method = "inverse", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 200e6, max_winners = 10, prob_win = (1/302575350), method = "inverse", split = TRUE)
+print("---7---")
+ev_split(jackpot = 400e6, tickets = 300e6, max_winners = 10, prob_win = (1/302575350), method = "inverse", split = TRUE)
+print("---8---")
+ev_split(jackpot = 850e6, tickets = 200e6, max_winners = 1, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 200e6, max_winners = 2, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 200e6, max_winners = 5, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 200e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+print("---9---")
+ev_split(jackpot = 400e6, tickets = 300e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+print("---10---")
+ev_split(jackpot = 400e6, tickets = 300e6, max_winners = 10, prob_win = (1/302575350), method = "inverse", split = FALSE)
+print("---11---")
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 10, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 100, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 1000, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 10e3, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 100e3, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 1e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 10e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 100e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+ev_split(jackpot = 850e6, tickets = 1000e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = FALSE)
+print("---12---")
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 10, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 100, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1000, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 10e3, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 100e3, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 10e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 100e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1000e6, max_winners = 10, prob_win = (1/302575350), method = "sum", split = TRUE)
+
 
 ```
-
-
 ## 3.3. split pot odds, calculate
 
 calculate odds of split pot, as function of number of tickets sold
@@ -412,52 +500,6 @@ ggsave(plot = plot_3d,
        width = 15,
        height = 7)
 ```
-
-## 3.7. graph: EV w/ split pot (empirical) JUST COPY OF ABOVE RN
-
-Here, the goal is to calculate the expected value of a ticket, based on actual jackpot sizes (annuitized) and ticket sales, incorporating odds of split pot
-
-
-```{r, fig.height=7, fig.width=15}
-coeff <- max(lott_clean$jackpot)/max(lott_clean$sales)
-color_jackpot <- "green3"
-color_sales <- "black"
-
-plot_3.7 <-
-lott_clean %>%
-
-  
-ggplot(aes(x = as.Date(date))) +
-  geom_line(aes(y = jackpot),
-            color = color_jackpot,
-            size = 2,
-            alpha = 0.5) +
-  geom_line(aes(y = sales * coeff),
-            color = color_sales,
-            size = 1,
-            alpha = 0.5) +
-  scale_x_date(name = "Date",
-               date_labels = "%Y (%b)",
-               date_breaks = "1 month") +
-  scale_y_continuous(labels = scales::label_dollar(),
-                     breaks = c(0, 1:16*100e6),
-                     name = "Jackpot Value",
-                     sec.axis = sec_axis(trans = ~.*(1/coeff),
-                                       name = "Tickets Sold",
-                                       breaks = c(0, seq(0, 8, 0.5)*100e6),
-                                       labels = scales::comma)) +
-  labs(title = "Jackpot Size & Ticket Sales, Over Time") +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.text.y.left = element_text(color = color_jackpot, size = 10),
-        axis.title.y.left = element_text(color = color_jackpot),
-        axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10)),
-        axis.text.x = element_text(angle = 90))
-
-plot_3.7
-
-```
-
 
 
 # 4. Cash Value
@@ -818,6 +860,42 @@ state_taxes(1000e6)
 
 state_taxes(87701-4601)
 ```
+# X. Other Prizes
+
+The goal here is to calculate the expected value of the others prizes in the lottery
+
+-- odds for smaller prizes can be found here (1) https://www.megamillions.com/how-to-play, and (2) calculations can be found here http://www.durangobill.com/MegaMillionsOdds.html (actually the latter are more exact)
+
+```{r}
+# total possible ticket combinations
+tick_combos <- choose(n = 70, k = 5) * 25
+
+# odds of winning each of the smaller prizes
+odds_5.0 <- choose(n = 5, k = 5) * choose(n = 24, k = 1) / tick_combos                          # ~(1/12607306)
+odds_4.1 <- choose(n = 5, k = 4) * choose(n = 65, k = 1) * choose(n = 1, k = 1)  / tick_combos  # ~(1/931001)
+odds_4.0 <- choose(n = 5, k = 4) * choose(n = 65, k = 1) * choose(n = 24, k = 1) / tick_combos  # ~(1/38792)
+odds_3.1 <- choose(n = 5, k = 3) * choose(n = 65, k = 2) * choose(n = 1, k = 1)  / tick_combos  # ~(1/14547)
+odds_3.0 <- choose(n = 5, k = 3) * choose(n = 65, k = 2) * choose(n = 24, k = 1) / tick_combos  # ~(1/606)
+odds_2.1 <- choose(n = 5, k = 2) * choose(n = 65, k = 3) * choose(n = 1, k = 1)  / tick_combos  # ~(1/693)
+odds_1.1 <- choose(n = 5, k = 1) * choose(n = 65, k = 4) * choose(n = 1, k = 1)  / tick_combos  # ~(1/89)
+odds_0.1 <- choose(n = 5, k = 0) * choose(n = 65, k = 5) * choose(n = 1, k = 1)  / tick_combos  # ~(1/37)
+
+# calculate additional expected value of ticket, from small prizes
+# method 1. don't account for # of tickets sold
+other_prizes <- 1e6  * odds_5.0 +  # ~(1/12607306)
+                10e3 * odds_4.1 +  # ~(1/931001)
+                500  * odds_4.0 +  # ~(1/38792)
+                200  * odds_3.1 +  # ~(1/14547)
+                10   * odds_3.0 +  # ~(1/693)
+                10   * odds_2.1 +  # ~(1/606)
+                4    * odds_1.1 +  # ~(1/89)
+                2    * odds_0.1    # ~(1/37)
+
+other_prizes
+
+```
+
+
 # Y. Jackpot Size v. Expect Value
 
 The expected value is a function of:
@@ -827,9 +905,71 @@ The expected value is a function of:
 
 Here, I try to identify how each of these affect the expected value of a ticket. And then graph those effeccts
 
+## Y.1. EV as f(jackpot, # ticks)
+
+The goal here is to compute and then graph expected value of a ticket (EV) as function of:
+-- jackpot value
+-- number of tickets sold
+-- whether the pot will be split, in the case of multiple winners
+
+### Y.1.1. compute: EV, w/ splitting & no splitting
+
+-- must also select max # winners to cycle through (picked: 100)
+-- note: will compute
+---- 1. ev: expected value, just including jackpot
+---- 2. ev_full: expected value, including smaller jackpots as well
+---- 3. ev_basic: expected value, if you buy tickets systematically (not randomly pick) [not fully computed out]
+
+
+```{r}
+jackpots <- c(1, 1e3, 1e6, 10e6, 20e6, 40e6, 50e6, 75e6, 100e6, 125e6, 150e6, 175e6, 200e6, 300e6, 400e6, 500e6, 750e6, 1e9, 1.5e9, 2e9, 5e9, 10e9)
+tickets <- c(1, 10, 1e3, 10e3, 100e3, 1e6, 10e6, 15e6, 20e6, 25e6, 30e6, 35e6, 40e6, 50e6, 100e6, 200e6, 500e6, 750e6, 1e9, 2e9, 5e9, 10e9)
+splits <- c(TRUE, FALSE)
+total_EVs <- length(jackpots) * length(tickets) * length(splits)
+total_EVs
+
+EV <- data.frame(jackpot = integer(total_EVs),
+                 tickets = integer(total_EVs),
+                 split = logical(total_EVs),
+                 ev = double(total_EVs),
+                 ev_full = double(total_EVs),
+                 ev_basic = double(total_EVs))
+
+i <- 0
+for (jackpot_i in jackpots){
+  for (tickets_i in tickets){
+    for (split_i in splits){
+      i <- i + 1
+      EV$jackpot[i] <- jackpot_i
+      EV$tickets[i] <- tickets_i
+      EV$split[i] <- split_i
+      EV$ev[i] <- ev_split(jackpot = jackpot_i, tickets = tickets_i, max_winners = 100, prob_win = (1/302575350), method = "sum", split = split_i)
+      EV$ev_full[i] <- EV$ev[i] + other_prizes
+      EV$ev_basic[i] <- jackpot_i * (tickets_i * (1/302575350))
+    }
+  }
+}
+
+
+```
+```{r}
+EV
+```
+
+# Y.2.
+
+```{r}
+EV %>% 
+  ggplot(aes(x = tickets, y = jackpot)) +
+  geom_raster(aes(fill = ev_full))
+```
+
+
 # ### WORKSPACE ###
 ```{r}
-quantile(x = lott_clean$sales, probs = c(0, 0.01, 0.1, 0.25, 0.50, 0.75, 0.9, 0.99, 1))
+quantile(x = round(lott_clean$sales/1e6), probs = c(0, 0.01, 0.05, 0.1, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.70, 0.75, 0.80, 0.9, 0.95, 0.99, 1))
+print("------------------------------------------------")
+quantile(x = round(lott_clean$jackpot/1e6), probs = c(0, 0.01, 0.05, 0.1, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.70, 0.75, 0.80, 0.9, 0.95, 0.99, 1))
 ```
 # ### WORKSPACE ###
 
