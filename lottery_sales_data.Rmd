@@ -120,7 +120,7 @@ ggplot(aes(x = as.Date(date))) +
             alpha = 0.5) +
   scale_x_date(name = "Date",
                date_labels = "%Y (%b)",
-               date_breaks = "1 month") +
+               date_breaks = "4 month") +
   scale_y_continuous(labels = scales::label_dollar(),
                      breaks = c(0, 1:16*100e6),
                      name = "Jackpot Value",
@@ -991,7 +991,7 @@ EV
 
 ## Y.2. graph: Theoretical EVs
 
-```{r, fig.width=12, fig.height=10}
+```{r, fig.width=15, fig.height=8}
 EV_long <-
 EV %>% 
   pivot_longer(cols = c("ev_full", "ev_full_cash", "ev_full_taxes"),
@@ -1007,19 +1007,36 @@ EV %>%
                                      400e6, 500e6, 750e6, 1e9, 1.5e9, 2e9, 5e9, 10e9),
                           labels = c("1", "1k", "1m", "10m", "20m", "40m", "50m", "75m", "100m", "125m", "150m", "175m", "200m", "300m",
                                      "400m", "500m", "750m", "1b", "1.5b", "2b", "5b", "10b")),
-         split = fa
+         split = factor(split,
+                        levels = c(FALSE, TRUE),
+                        labels = c("Jackpots Never Split :)", "Jackpots Split :(")),
+         type = factor(type,
+                       levels = c("ev_full", "ev_full_cash", "ev_full_taxes"),
+                       labels = c("Annuity Value (No Taxes)", "Cash Value (No Taxes)", "Cash Value (Fed & State Taxes)")),
          ev_print = round(ev, 2),
          sign = case_when(ev_print <2   ~ "negative",
                           ev_print == 2 ~ "zero",
                           ev_print >2   ~ "positive"),
-         sign = as.factor(sign))
+         sign = factor(sign,
+                       levels = c("negative", "zero", "positive"))) %>% 
+  group_by(sign) %>% 
+  mutate(ev_max_sign = max(ev_print)^(1/4), # note: raising to root, done to squish together values
+         ev_min_sign = min(ev_print)^(1/3)) %>% 
+  ungroup() %>% 
+  mutate(alpha = case_when(sign == "positive" ~ 0.4 + 0.6 * ((ev_print^(1/4) - ev_min_sign) / ev_max_sign), # add some baseline alpha
+                           sign == "negative" ~ 0.4 + 0.6 * (1 - ((ev_print^(1/3) - ev_min_sign) / ev_min_sign)),
+                           sign == "zero" ~ 1))
 
+#EV_long %>% 
+#  sample_n(10)
+
+plot_Y.2 <-
 EV_long %>% 
   ggplot(aes(x = tickets,
              y = jackpot,
              fill = sign,
              label = ev_print)) +
-  geom_raster(alpha = 0.35 + 0.65*(EV_long$ev_print - min(EV_long$ev_print))/max(EV_long$ev_print)) +   #0.5) +
+  geom_raster(alpha = EV_long$alpha) +
   geom_text(color = "white",
             size = 2) +
   geom_rect(aes(ymin = 5  - 0.5,  #which(jackpots %in% 20e6),
@@ -1028,12 +1045,12 @@ EV_long %>%
                 xmax = 18 + 0.5, #which(tickets %in% 750e6),
                 fill = NA),
                 color = "white") +
-  scale_fill_manual(values = c("red", "green", "grey")) +
+  scale_fill_manual(values = c("red2", "green4", "grey")) +
   labs(x = "Ticket Sales",
-       y = "Jackpot Size ($)",
+       y = "Advertised Jackpot Size ($)",
        title = "Expected Value of Lottery Ticket ($)") +
   guides(fill = FALSE) +
-  facet_grid(type ~ split) +
+  facet_grid(split ~ type) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(angle = 90,
@@ -1042,6 +1059,18 @@ EV_long %>%
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
+plot_Y.2
+
+
+```
+
+## Y.2. save
+
+```{r}
+ggsave(plot = plot_Y.2,
+       filename = "ev_theoretical_wide.pdf",
+       width = 20,
+       height = 10)
 ```
 
 
