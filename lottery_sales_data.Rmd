@@ -881,17 +881,29 @@ odds_1.1 <- choose(n = 5, k = 1) * choose(n = 65, k = 4) * choose(n = 1, k = 1) 
 odds_0.1 <- choose(n = 5, k = 0) * choose(n = 65, k = 5) * choose(n = 1, k = 1)  / tick_combos  # ~(1/37)
 
 # calculate additional expected value of ticket, from small prizes
-# method 1. don't account for # of tickets sold
-other_prizes <- 1e6  * odds_5.0 +  # ~(1/12607306)
-                10e3 * odds_4.1 +  # ~(1/931001)
-                500  * odds_4.0 +  # ~(1/38792)
-                200  * odds_3.1 +  # ~(1/14547)
-                10   * odds_3.0 +  # ~(1/693)
-                10   * odds_2.1 +  # ~(1/606)
-                4    * odds_1.1 +  # ~(1/89)
-                2    * odds_0.1    # ~(1/37)
+# method 1. without taxes
+other_prizes <- 1e6  * odds_5.0 +
+                10e3 * odds_4.1 +
+                500  * odds_4.0 +
+                200  * odds_3.1 +
+                10   * odds_3.0 +
+                10   * odds_2.1 +
+                4    * odds_1.1 +
+                2    * odds_0.1
 
 other_prizes
+
+# method 2. with taxes
+other_prizes_taxes <- (1e6  - fed_taxes(1e6)  - state_taxes(1e6))  * odds_5.0 +
+                      (10e3 - fed_taxes(10e3) - state_taxes(10e3)) * odds_4.1 +
+                      (500  - fed_taxes(500)  - state_taxes(500))  * odds_4.0 +
+                      (200  - fed_taxes(200)  - state_taxes(200))  * odds_3.1 +
+                      (10   - fed_taxes(10)   - state_taxes(10))   * odds_3.0 +
+                      (10   - fed_taxes(10)   - state_taxes(10))   * odds_2.1 +
+                      (4   - fed_taxes(4)   - state_taxes(4))      * odds_1.1 +
+                      (2   - fed_taxes(2)   - state_taxes(2))      * odds_0.1
+
+other_prizes_taxes
 
 ```
 
@@ -922,19 +934,24 @@ The goal here is to compute and then graph expected value of a ticket (EV) as fu
 
 
 ```{r}
+# preset value, to loop through & use
 jackpots <- c(1, 1e3, 1e6, 10e6, 20e6, 40e6, 50e6, 75e6, 100e6, 125e6, 150e6, 175e6, 200e6, 300e6, 400e6, 500e6, 750e6, 1e9, 1.5e9, 2e9, 5e9, 10e9)
 tickets <- c(1, 10, 1e3, 10e3, 100e3, 1e6, 10e6, 15e6, 20e6, 25e6, 30e6, 35e6, 40e6, 50e6, 100e6, 200e6, 500e6, 750e6, 1e9, 2e9, 5e9, 10e9)
+max_winners <- 100
 splits <- c(TRUE, FALSE)
 total_EVs <- length(jackpots) * length(tickets) * length(splits)
 total_EVs
 
+# data frame, to save results
 EV <- data.frame(jackpot = integer(total_EVs),
                  tickets = integer(total_EVs),
                  split = logical(total_EVs),
-                 ev = double(total_EVs),
+                 ev_jj = double(total_EVs),
                  ev_full = double(total_EVs),
-                 ev_basic = double(total_EVs))
+                 ev_full_cash = double(total_EVs),
+                 ev_full_taxes = double(total_EVs))
 
+# loop and calculate all possible EVs
 i <- 0
 for (jackpot_i in jackpots){
   for (tickets_i in tickets){
@@ -943,9 +960,25 @@ for (jackpot_i in jackpots){
       EV$jackpot[i] <- jackpot_i
       EV$tickets[i] <- tickets_i
       EV$split[i] <- split_i
-      EV$ev[i] <- ev_split(jackpot = jackpot_i, tickets = tickets_i, max_winners = 100, prob_win = (1/302575350), method = "sum", split = split_i)
-      EV$ev_full[i] <- EV$ev[i] + other_prizes
-      EV$ev_basic[i] <- jackpot_i * (tickets_i * (1/302575350))
+      EV$ev_jj[i] <- ev_split(jackpot = jackpot_i,
+                             tickets = tickets_i,
+                             max_winners = max_winners,
+                             prob_win = (1/302575350),
+                             method = "sum",
+                             split = split_i)
+      EV$ev_full[i] <- EV$ev_jj[i] + other_prizes
+      EV$ev_full_cash[i] <- ev_split(jackpot = jackpot_i * cash_coeff,
+                                tickets = tickets_i,
+                                max_winners = max_winners,
+                                prob_win = (1/302575350),
+                                method = "sum",
+                                split = split_i) + other_prizes
+      EV$ev_full_taxes[i] <- ev_split(jackpot = (jackpot_i * cash_coeff) - fed_taxes(jackpot_i * cash_coeff) - state_taxes(jackpot_i * cash_coeff),
+                                tickets = tickets_i,
+                                max_winners = max_winners,
+                                prob_win = (1/302575350),
+                                method = "sum",
+                                split = split_i) + other_prizes_taxes
     }
   }
 }
@@ -956,12 +989,59 @@ for (jackpot_i in jackpots){
 EV
 ```
 
-# Y.2.
+## Y.2. graph: Theoretical EVs
 
-```{r}
+```{r, fig.width=12, fig.height=10}
+EV_long <-
 EV %>% 
-  ggplot(aes(x = tickets, y = jackpot)) +
-  geom_raster(aes(fill = ev_full))
+  pivot_longer(cols = c("ev_full", "ev_full_cash", "ev_full_taxes"),
+               names_to = "type",
+               values_to = "ev") %>% 
+  mutate(tickets = factor(tickets,
+                          levels = c(1, 10, 1e3, 10e3, 100e3, 1e6, 10e6, 15e6, 20e6, 25e6, 30e6, 35e6, 40e6, 50e6, 100e6, 
+                                      200e6, 500e6, 750e6, 1e9, 2e9, 5e9, 10e9),
+                          labels = c("1", "10", "1k", "10k", "100k", "1m", "10m", "15m", "20m", "25m", "30m", "35m", "40m", "50m", "100m",
+                                     "200m", "500m", "750m", "1b", "2b", "5b", "10b")),
+         jackpot = factor(jackpot,
+                          levels = c(1, 1e3, 1e6, 10e6, 20e6, 40e6, 50e6, 75e6, 100e6, 125e6, 150e6, 175e6, 200e6, 300e6,
+                                     400e6, 500e6, 750e6, 1e9, 1.5e9, 2e9, 5e9, 10e9),
+                          labels = c("1", "1k", "1m", "10m", "20m", "40m", "50m", "75m", "100m", "125m", "150m", "175m", "200m", "300m",
+                                     "400m", "500m", "750m", "1b", "1.5b", "2b", "5b", "10b")),
+         split = fa
+         ev_print = round(ev, 2),
+         sign = case_when(ev_print <2   ~ "negative",
+                          ev_print == 2 ~ "zero",
+                          ev_print >2   ~ "positive"),
+         sign = as.factor(sign))
+
+EV_long %>% 
+  ggplot(aes(x = tickets,
+             y = jackpot,
+             fill = sign,
+             label = ev_print)) +
+  geom_raster(alpha = 0.35 + 0.65*(EV_long$ev_print - min(EV_long$ev_print))/max(EV_long$ev_print)) +   #0.5) +
+  geom_text(color = "white",
+            size = 2) +
+  geom_rect(aes(ymin = 5  - 0.5,  #which(jackpots %in% 20e6),
+                ymax = 19 + 0.5, #which(jackpots %in% 1.5e9),
+                xmin = 8  - 0.5,  #which(tickets %in% 15e6),
+                xmax = 18 + 0.5, #which(tickets %in% 750e6),
+                fill = NA),
+                color = "white") +
+  scale_fill_manual(values = c("red", "green", "grey")) +
+  labs(x = "Ticket Sales",
+       y = "Jackpot Size ($)",
+       title = "Expected Value of Lottery Ticket ($)") +
+  guides(fill = FALSE) +
+  facet_grid(type ~ split) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 90,
+                                   vjust = 0.25),
+        axis.text.y = element_text(vjust = 0.25),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+
 ```
 
 
