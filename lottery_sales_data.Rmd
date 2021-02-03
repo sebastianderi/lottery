@@ -7,6 +7,7 @@ output: html_notebook
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+plot_save <- FALSE
 ```
 
 
@@ -15,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(readxl)
 library(tidyverse)
+library(lubridate)
 library(binom)
 
 ```
@@ -103,12 +105,14 @@ https://www.r-graph-gallery.com/279-plotting-time-series-with-ggplot2.html
 ## 2.1. graph: w/ outlier
 
 ```{r, fig.height=7, fig.width=15}
-coeff <- max(lott_clean$jackpot)/max(lott_clean$sales)
-color_jackpot <- "green3"
+coeff <- max(lott_clean$jackpot/1e6)/max(lott_clean$sales/1e6)
+color_jackpot <- "green4"
 color_sales <- "black"
 
-plot_2c <-
+plot_2.1 <-
 lott_clean %>% 
+  mutate(jackpot = jackpot / 1e6,
+         sales = sales / 1e6) %>% 
 ggplot(aes(x = as.Date(date))) +
   geom_line(aes(y = jackpot),
             color = color_jackpot,
@@ -119,34 +123,37 @@ ggplot(aes(x = as.Date(date))) +
             size = 1,
             alpha = 0.5) +
   scale_x_date(name = "Date",
-               date_labels = "%Y (%b)",
-               date_breaks = "4 month") +
-  scale_y_continuous(labels = scales::label_dollar(),
-                     breaks = c(0, 1:16*100e6),
-                     name = "Jackpot Value",
+               date_labels = "%Y") +
+  scale_y_continuous(labels = c("$0", paste0("$", seq(1, 9, 1)*100, "m"), paste0("$", seq(1, 1.6, 0.1), "b")),
+                     breaks = c(0, 1:16*100),
+                     name = "Jackpot Value \n (m=million, b=billion)",
                      sec.axis = sec_axis(trans = ~.*(1/coeff),
-                                       name = "Tickets Sold",
-                                       breaks = c(0, seq(0, 8, 0.5)*100e6),
-                                       labels = scales::comma)) +
-  labs(title = "Jackpot Size & Ticket Sales, Over Time") +
+                                       name = "Tickets Sold (millions)",
+                                       breaks = c(0, seq(0, 8, 0.5)*100))) +
+  labs(title = "Jackpot & Ticket Sales, Over Time") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.y.left = element_text(color = color_jackpot, size = 10),
-        axis.title.y.left = element_text(color = color_jackpot),
+        axis.title.y.left = element_text(color = color_jackpot,
+                                         margin = margin(t = 0, r = 10, b = 0, l = 0)),
         axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10)),
-        axis.text.x = element_text(angle = 90))
+        axis.text.x = element_text(angle = 0),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank())
 
-plot_2c
+plot_2.1
 
 ```
 
 ## 2.1. save
 
 ```{r}
-ggsave(plot = plot_2c,
+if (plot_save){
+ggsave(plot = plot_2.1,
        filename = "jackpot_sales_full.pdf",
        width = 15,
        height = 7)
+}
 ```
 
 
@@ -157,7 +164,7 @@ coeff <- 3.5 #max(lott_clean$jackpot)/max(lott_clean$sales)
 color_jackpot <- "green3"
 color_sales <- "black"
 
-plot_2d <-
+plot_2.2 <-
 lott_clean %>% 
 ggplot(aes(x = as.Date(date))) +
   geom_line(aes(y = jackpot),
@@ -187,17 +194,19 @@ ggplot(aes(x = as.Date(date))) +
         axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10)),
         axis.text.x = element_text(angle = 90))
 
-plot_2d
+plot_2.2
 ```
 
 
 ## 2.2. save
 
 ```{r}
-ggsave(plot = plot_2d,
+if (plot_save){
+ggsave(plot = plot_2.2,
        filename = "jackpot_sales_exclude.pdf",
        width = 15,
        height = 7)
+}
 ```
 
 
@@ -416,7 +425,7 @@ dat_split %>%
 ## 3.6. graph: split pot
 
 ```{r, fig.height=6, fig.width=12}
-plot_3d <-
+plot_3.6 <-
 dat_split %>%
   filter(num_winners <= 5) %>% 
   mutate(num_winners = as.factor(num_winners)) %>% 
@@ -489,16 +498,18 @@ dat_split %>%
   theme(axis.text.x = element_text(angle = 0),
         plot.title = element_text(hjust = 0.5))
 
-plot_3d
+plot_3.6
 ```
 
 ## 3.6. save
 
 ```{r}
-ggsave(plot = plot_3d,
+if (plot_save){
+ggsave(plot = plot_3.6,
        filename = "split_pot_overlay.pdf",
        width = 15,
        height = 7)
+}
 ```
 
 
@@ -617,7 +628,7 @@ coeff <- max(cash$advertised)/max(cash$perc)
 color_advertised <- "dodgerblue4"
 color_perc <- "black"
 
-plot_4 <-
+plot_4.3 <-
 cash %>% 
 ggplot(aes(x = date)) +
   geom_line(aes(y = advertised),
@@ -648,18 +659,18 @@ ggplot(aes(x = date)) +
         axis.text.x = element_text(angle = 90),
         panel.grid.minor = element_blank())
 
-plot_4
-
-
+plot_4.3
 
 ```
 ### 4.3. save
 
 ```{r}
-ggsave(plot = plot_4,
+if (plot_save){
+ggsave(plot = plot_4.3,
        filename = "cash_jackpot.pdf",
        width = 15,
        height = 7)
+}
 ```
 
 ### 4.4. quantiles
@@ -860,7 +871,7 @@ state_taxes(1000e6)
 
 state_taxes(87701-4601)
 ```
-# X. Other Prizes
+# 6. Other Prizes
 
 The goal here is to calculate the expected value of the others prizes in the lottery
 
@@ -908,7 +919,7 @@ other_prizes_taxes
 ```
 
 
-# Y. Jackpot Size v. Expect Value
+# 7. Jackpot Size v. Expect Value
 
 The expected value is a function of:
 - net present value (cash value of prize)
@@ -917,14 +928,12 @@ The expected value is a function of:
 
 Here, I try to identify how each of these affect the expected value of a ticket. And then graph those effeccts
 
-## Y.1. EV as f(jackpot, # ticks)
+## 7.1. Theoretical EVs
 
 The goal here is to compute and then graph expected value of a ticket (EV) as function of:
 -- jackpot value
 -- number of tickets sold
 -- whether the pot will be split, in the case of multiple winners
-
-### Y.1.1. compute: EV, w/ splitting & no splitting
 
 -- must also select max # winners to cycle through (picked: 100)
 -- note: will compute
@@ -989,7 +998,7 @@ for (jackpot_i in jackpots){
 EV
 ```
 
-## Y.2. graph: Theoretical EVs
+## 7.2. graph: Theoretical EVs
 
 ```{r, fig.width=15, fig.height=8}
 EV_long <-
@@ -1030,7 +1039,7 @@ EV %>%
 #EV_long %>% 
 #  sample_n(10)
 
-plot_Y.2 <-
+plot_7.2 <-
 EV_long %>% 
   ggplot(aes(x = tickets,
              y = jackpot,
@@ -1059,19 +1068,108 @@ EV_long %>%
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
-plot_Y.2
+plot_7.2
 
 
 ```
 
-## Y.2. save
+## 7.2. save
 
 ```{r}
-ggsave(plot = plot_Y.2,
+if (plot_save){
+ggsave(plot = plot_7.2,
        filename = "ev_theoretical_wide.pdf",
        width = 20,
        height = 10)
+}
 ```
+
+
+## 7.3. EV over time
+
+```{r}
+# shape data
+EV_time <-
+lott_clean %>% 
+  rowwise() %>% 
+  mutate(ev_advert_ns = ev_split(jackpot = jackpot,
+                                 tickets = sales,
+                                 max_winners = 100,
+                                 prob_win = (1/302575350),
+                                 method = "sum",
+                                 split = FALSE),
+         ev_cash_ns = ev_split(jackpot = jackpot * cash_coeff,
+                               tickets = sales,
+                               max_winners = 100,
+                               prob_win = (1/302575350),
+                               method = "sum",
+                               split = FALSE),
+         ev_taxes_ns = ev_split(jackpot = ((jackpot * cash_coeff) - fed_taxes(jackpot * cash_coeff) - state_taxes(jackpot * cash_coeff)),
+                               tickets = sales,
+                               max_winners = 100,
+                               prob_win = (1/302575350),
+                               method = "sum",
+                               split = FALSE),
+         ev_advert_s = ev_split(jackpot = jackpot,
+                               tickets = sales,
+                               max_winners = 100,
+                               prob_win = (1/302575350),
+                               method = "sum",
+                               split = TRUE),
+         ev_cash_s = ev_split(jackpot = jackpot * cash_coeff,
+                              tickets = sales,
+                              max_winners = 100,
+                              prob_win = (1/302575350),
+                              method = "sum",
+                              split = TRUE),
+         ev_taxes_s = ev_split(jackpot = ((jackpot * cash_coeff) - fed_taxes(jackpot * cash_coeff) - state_taxes(jackpot * cash_coeff)),
+                              tickets = sales,
+                              max_winners = 100,
+                              prob_win = (1/302575350),
+                              method = "sum",
+                              split = TRUE)) %>% 
+  pivot_longer(cols = contains("ev_"),
+               names_to = "ev_type",
+               values_to = "ev") %>% 
+  mutate(split = case_when(ev_type %in% c("ev_advert_ns", "ev_cash_ns", "ev_taxes_ns") ~ FALSE,
+                           ev_type %in% c("ev_advert_s", "ev_cash_s", "ev_taxes_s") ~ TRUE),
+         ev_calc = case_when(ev_type %in% c("ev_advert_ns", "ev_advert_s") ~ "advertised",
+                             ev_type %in% c("ev_cash_ns", "ev_cash_s") ~ "cash",
+                             ev_type %in% c("ev_taxes_ns", "ev_taxes_s") ~ "taxes"))
+
+EV_time
+```
+
+## 7.3. graph: EV over time
+
+```{r, fig.height=7, fig.width=15}
+
+# graph
+plot_7.3 <-
+EV_time %>% 
+ggplot(aes(x = as.Date(date),
+           y = ev,
+           color = ev_calc)) +
+  geom_line() +
+  geom_hline(yintercept = 2) +
+  scale_x_date(name = "Date",
+               date_labels = "%Y") +
+  scale_y_continuous(name = "Expected Value") +
+  labs(title = "Expected Value, Over Time") +
+  facet_grid(.~split) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5)) #,
+  #      axis.text.y.left = element_text(color = color_jackpot, size = 10),
+  #      axis.title.y.left = element_text(color = color_jackpot,
+  #                                       margin = margin(t = 0, r = 10, b = 0, l = 0)),
+  #      axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10)),
+  #      axis.text.x = element_text(angle = 0),
+  #      panel.grid.major.x = element_blank(),
+  #      panel.grid.minor.x = element_blank())
+
+plot_7.3
+```
+
 
 
 # ### WORKSPACE ###
@@ -1082,9 +1180,9 @@ quantile(x = round(lott_clean$jackpot/1e6), probs = c(0, 0.01, 0.05, 0.1, 0.20, 
 ```
 # ### WORKSPACE ###
 
-# X. Model
+# 8. Model
 
-## Xa. Model 1 (y = sales, x = jackpot)
+## 8.1. Model 1 (y = sales, x = jackpot)
 
 ```{r}
 m1 <- lm(data = lott_clean,
@@ -1093,7 +1191,7 @@ m1 <- lm(data = lott_clean,
 summary(m1)
 
 ```
-## Xb.Correlation (sales & jackpot)
+## 8.2.Correlation (sales & jackpot)
 
 ```{r}
 cor(lott_clean$sales, lott_clean$jackpot)
