@@ -1170,6 +1170,24 @@ ggplot(aes(x = as.Date(date),
 plot_7.3
 ```
 
+## 7.4.graph: EV v. jackpot size
+
+```{r, fig.height=10, fig.width=8}
+EV_time %>% 
+  mutate(year = year(date)) %>% 
+ggplot(aes(x = jackpot,
+           y = ev,
+           color = ev_calc)) +
+  geom_point(alpha = 0.25) +
+  geom_hline(yintercept = 2) +
+  geom_smooth(method = "lm", #"loess",
+              se = FALSE,
+              alpha = 0.25) +
+  #geom_line() +
+  facet_grid(year~.) +
+  theme_bw()
+
+```
 
 
 # ### WORKSPACE ###
