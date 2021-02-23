@@ -1,5 +1,7 @@
 ---
 title: "R Notebook"
+author: sebastian deri
+date: jan-feb 2021
 output: html_notebook
 ---
 
@@ -1184,7 +1186,7 @@ ggplot(aes(x = jackpot,
               se = FALSE,
               alpha = 0.25) +
   #geom_line() +
-  facet_grid(year~.) +
+  facet_grid(year~split) +
   theme_bw()
 
 ```
