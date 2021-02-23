@@ -1,0 +1,54 @@
+---
+title: "Lottery Analysis"
+author: sebastian deri
+date: jan-feb 2021
+output: html_notebook
+---
+
+# --- Settings ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+plot_save <- FALSE
+```
+
+
+# --- Packages ---
+
+```{r}
+library(tidyverse)
+
+```
+
+
+# --- Data ---
+
+# 1. create data
+
+```{r}
+# make vector of possible incomes
+money <- seq(0, 1e6, 1e3)
+
+# turn into data frame
+df_util <- data.frame(money)
+
+# show df
+df_util
+
+```
+
+# --- Analysis ---
+
+# 1. graph
+
+```{r}
+df_util %>% 
+  mutate(util_1 = log(money)) %>% 
+  ggplot(aes(x = money,
+             y = util_1)) +
+  geom_line()
+
+```
+
+# --- END/MISC ---
+
