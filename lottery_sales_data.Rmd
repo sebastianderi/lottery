@@ -140,8 +140,9 @@ ggplot(aes(x = as.Date(date))) +
                                          margin = margin(t = 0, r = 10, b = 0, l = 0)),
         axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10)),
         axis.text.x = element_text(angle = 0),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank())
+        #panel.grid.major.x = element_blank()
+        panel.grid.minor.x = element_blank()
+        )
 
 plot_2.1
 
@@ -1174,19 +1175,21 @@ plot_7.3
 
 ## 7.4.graph: EV v. jackpot size
 
-```{r, fig.height=10, fig.width=8}
+```{r, fig.height=6, fig.width=15}
 EV_time %>% 
   mutate(year = year(date)) %>% 
 ggplot(aes(x = jackpot,
            y = ev,
            color = ev_calc)) +
   geom_point(alpha = 0.25) +
+  geom_line() +
   geom_hline(yintercept = 2) +
-  geom_smooth(method = "lm", #"loess",
-              se = FALSE,
-              alpha = 0.25) +
-  #geom_line() +
-  facet_grid(year~split) +
+  #geom_smooth(method = "lm", #"loess",
+  #            se = FALSE,
+  #            alpha = 0.25) +
+  #facet_grid(year~split) +
+  facet_grid(split~year,
+             scales = "free_x")+ 
   theme_bw()
 
 ```
