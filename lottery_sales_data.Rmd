@@ -1,8 +1,12 @@
 ---
 title: "Lottery Analysis"
-author: sebastian deri
-date: jan-feb 2021
-output: html_notebook
+author: "sebastian deri"
+date: "jan-feb 2021"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
 ---
 
 # --- Settings ---
@@ -72,6 +76,7 @@ ggplot(data = lott_clean,
 
 ```
 
+
 # 1.3. jackpot quantiles (in millions)
 
 ```{r}
@@ -88,6 +93,8 @@ ggplot(data = lott_clean,
   geom_line()
 
 ```
+
+
 
 ## 1.5. sales quantiles (in millions)
 
@@ -125,7 +132,8 @@ ggplot(aes(x = as.Date(date))) +
             size = 1,
             alpha = 0.5) +
   scale_x_date(name = "Date",
-               date_labels = "%Y") +
+               date_labels = "%Y",
+               date_breaks = "1 year") +
   scale_y_continuous(labels = c("$0", paste0("$", seq(1, 9, 1)*100, "m"), paste0("$", seq(1, 1.6, 0.1), "b")),
                      breaks = c(0, 1:16*100),
                      name = "Jackpot Value \n (m=million, b=billion)",
@@ -139,9 +147,9 @@ ggplot(aes(x = as.Date(date))) +
         axis.title.y.left = element_text(color = color_jackpot,
                                          margin = margin(t = 0, r = 10, b = 0, l = 0)),
         axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10)),
-        axis.text.x = element_text(angle = 0),
+        axis.text.x = element_text(angle = 0)
         #panel.grid.major.x = element_blank()
-        panel.grid.minor.x = element_blank()
+        #panel.grid.minor.x = element_blank()
         )
 
 plot_2.1
@@ -676,11 +684,53 @@ ggsave(plot = plot_4.3,
 }
 ```
 
+### 4.x. graph (both absolute values)
+
+```{r, fig.height=7, fig.width=12}
+coeff <- max(cash$advertised)/max(cash$perc)
+color_advertised <- "dodgerblue4"
+color_perc <- "black"
+
+plot_4.x <-
+cash %>% 
+ggplot(aes(x = date)) +
+  geom_line(aes(y = advertised),
+            color = color_advertised,
+            size = 2,
+            alpha = 0.5) +
+  geom_point(aes(y = perc * coeff),
+             color = color_perc) +
+  geom_line(aes(y = perc * coeff),
+            color = color_perc,
+            size = 1,
+            alpha = 0.5) +
+  scale_x_date(name = "Date",
+               date_labels = "%Y (%b)",
+               date_breaks = "1 month") +
+  scale_y_continuous(labels = scales::label_dollar(),
+                     breaks = c(0, 1:17*100e6),
+                     name = "Advertised Jackpot Value (Annuity)",
+                     sec.axis = sec_axis(trans = ~.*(1/coeff),
+                                       name = "Cash Value (as % of Advertised Jackpot)",
+                                       breaks = seq(0, 100, 10))) +
+  labs(title = "Advertised Jackpot Size & Cash Value of Jackpot, Over Time") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.y.left = element_text(color = color_advertised, size = 10),
+        axis.title.y.left = element_text(color = color_advertised),
+        axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10)),
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank())
+
+plot_4.x
+
+```
+
 ### 4.4. quantiles
 
 ```{r}
 quantile(x = cash$perc,
-         probs = c(0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99))
+         probs = c(0, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99, 1))
 ```
 ### 4.5. median, each year
 
