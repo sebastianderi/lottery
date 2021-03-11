@@ -2,7 +2,7 @@
 title: "Lottery Analysis"
 subtitle: "Mega Millions Expected Value"
 author: "Sebastian Deri"
-date: "Jan.- Feb. 2021"
+date: "January-February 2021"
 output:
   html_document:
     df_print: paged
@@ -10,7 +10,7 @@ output:
     toc_float: true
 ---
 
-# Introduction
+# Overview
 
 The goal in this analysis to:
 
@@ -25,7 +25,7 @@ The goal in this analysis to:
   
 # --- Settings ---
 
-```{r setup, include=FALSE}
+```{r setup, echo=TRUE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 plot_save <- FALSE
 ```
@@ -33,7 +33,7 @@ plot_save <- FALSE
 
 # --- Packages ---
 
-```{r}
+```{r, echo=TRUE, message=FALSE}
 library(readxl)
 library(tidyverse)
 library(lubridate)
@@ -43,20 +43,20 @@ library(binom)
 
 # --- Load Data ---
 
-## 1. read
+## 1. Read
 
 ```{r}
 lott <- read_xlsx("lottery_sales_data.xlsx")
 
 ```
 
-## 2. view
+## 2. View
 
 ```{r}
 View(lott)
 ```
 
-## 3. types
+## 3. Types
 
 ```{r}
 # examine cols&types
@@ -66,11 +66,11 @@ t(data.frame(lapply(lott, class)))
 
 # --- Analysis ---
 
-# 1. Basic Data Shaping & Rudimentary Vizualization
+# 1. Basic Shaping & Viz
 
 The goal here is to just get the data into a nice, workable format. And to do some quick and dirty, cursory visualizations, to get a sense of what the main variables of interest (jackpot sizes, and total sales) look like.
 
-## 1.1. shape
+## 1.1. Shape
 
 ```{r}
 lott_clean <-
@@ -81,7 +81,7 @@ lott %>%
 lott_clean
 ```
 
-## 1.2. graph: just jackpot
+## 1.2. Graph: Just Jackpot
 
 Graph of jackpot sizes over time. Axes and everything still ugly.
 
@@ -93,7 +93,7 @@ ggplot(data = lott_clean,
   geom_line()
 
 ```
-## 1.2. graph: just jackpot (NICE)
+## 1.2. Graph: Just Jackpot (NICE)
 
 ```{r, fig.height=7, fig.width=15}
 color_jackpot <- "green4"
@@ -127,7 +127,7 @@ ggplot(aes(x = as.Date(date))) +
 plot_just_sales
 
 ```
-## 1.2. save
+## 1.2. Save
 
 ```{r}
 if (plot_save){
@@ -140,9 +140,7 @@ ggsave(plot = plot_just_sales,
 ```
 
 
-
-
-## 1.3. jackpot quantiles (in millions)
+## 1.3. Jackpot Percentiles (in millions)
 
 Jackpot sizes at various percentiles.
 
@@ -150,10 +148,9 @@ Jackpot sizes at various percentiles.
 quantile(round(lott_clean$jackpot/1e6, digits = 1), probs = c(0, 0.01, 0.05, seq(0.1, 0.9, 0.1), 0.95, 0.99, 1))
 ```
 
-## 1.4. graph: sales
+## 1.4. Graph: Sales
 
 Graph of total sales figures over time. Axes and everything still ugly.
-
 
 ```{r, fig.height=5, fig.width=15}
 ggplot(data = lott_clean,
@@ -164,7 +161,7 @@ ggplot(data = lott_clean,
 
 ```
 
-## 1.5. sales quantiles (in millions)
+## 1.5. Sales Percentiles (in millions)
 
 Total ticket sales at various percentiles.
 
@@ -172,7 +169,7 @@ Total ticket sales at various percentiles.
 quantile(round(lott_clean$sales/1e6, digits = 1), probs = c(0, 0.01, 0.05, seq(0.1, 0.9, 0.1), 0.95, 0.99, 1))
 ```
 
-## 1.6 Correlation (sales & jackpot)
+## 1.6. Correlation
 
 Just calculate the correlation between jackpot size and total sales. Very high.
 
@@ -180,7 +177,7 @@ Just calculate the correlation between jackpot size and total sales. Very high.
 cor(lott_clean$sales, lott_clean$jackpot)
 ```
 
-## 1.7. Basic Linear Model (y = sales, x1 = jackpot)
+## 1.7. Basic Linear Model
 
 And the same relationship, just as a regression.
 
@@ -192,7 +189,7 @@ summary(m1)
 
 ```
 
-# 2. Sales & Jackpot Combined
+# 2. Viz: Sales & Jackpot Figures
 
 The goal here is to create a pretty plot that shows both jackpot sizes and total sales together (using two y-axes), in a way that captures how much they move together.
 
@@ -203,7 +200,7 @@ https://www.r-graph-gallery.com/line-chart-dual-Y-axis-ggplot2.html
 * Very useful resource for date formatting in ggplot
 https://www.r-graph-gallery.com/279-plotting-time-series-with-ggplot2.html
 
-## 2.1. graph: w/ outlier
+## 2.1. Graph: w/ Outlier
 
 ```{r, fig.height=7, fig.width=15}
 coeff <- max(lott_clean$jackpot/1e6)/max(lott_clean$sales/1e6)
@@ -235,13 +232,15 @@ ggplot(aes(x = as.Date(date))) +
   labs(title = "Jackpot & Ticket Sales, Over Time") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5,
-                                  size = 15),
+                                  size = 20),
         axis.text.y.left = element_text(color = color_jackpot,
                                         size = 15),
         axis.title.y.left = element_text(color = color_jackpot,
                                          size = 15,
                                          margin = margin(t = 0, r = 10, b = 0, l = 0)),
-        axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10)),
+        axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10),
+                                          size = 15),
+        axis.text.y.right = element_text(size = 15),
         axis.text.x = element_text(angle = 0)
         )
 
@@ -249,7 +248,7 @@ plot_2.1
 
 ```
 
-## 2.1. save
+## 2.1. Save
 
 ```{r}
 if (plot_save){
@@ -261,7 +260,7 @@ ggsave(plot = plot_2.1,
 ```
 
 
-## 2.2. graph: w/o outlier
+## 2.2. Graph: w/o Outlier
 
 This is just a zoomed in plot, with that very highest 1 billion dollar plus jackpot removed.
 
@@ -303,7 +302,7 @@ ggplot(aes(x = as.Date(date))) +
 plot_2.2
 ```
 
-## 2.2. save
+## 2.2. Save
 
 ```{r}
 if (plot_save){
@@ -319,7 +318,7 @@ ggsave(plot = plot_2.2,
 
 The goal in this section is to calculate the odds of splitting the lottery jackpot, as a function of how any other people have bought tickets. First, I will make a function to do these calculations. Then I will implement the function on actual sales data.
 
-## 3.1. function: calculate odds of split pot
+## 3.1. Function: odds of split pot
 
 inputs:
 * number of potential winners
@@ -338,9 +337,11 @@ prob_k <- function(num_winners, num_tickets, prob_win){
 }
 ```
 
-## 3.1 test
+## 3.1. Test
 
-```{r}
+Test cases for function (long endless scroll of output not displayed in Rmd).
+
+```{r, echo=TRUE, results='hide'}
 print("---1---")
 (1/302575350)
 print("---2---")
@@ -357,17 +358,20 @@ prob_k(num_winners = 2, num_tickets = 4, prob_win = (1/302575350))/prob_k(num_wi
 ```
 
 
-## 3.2. function: expected value, incorporating odds of split pot
+## 3.2. Function: EV, w/ split pot
 
 inputs:
--- jackpot size (can be either cash value or annuity value)
--- number of tickets sold
--- max number of potential winners to consider
--- probability of winning jackpot
--- (also: method of computing probability, summing or inverse of non-winners)
--- (also: whether pot is to be split)
+
+* jackpot size (can be either cash value or annuity value)
+* number of tickets sold
+* max number of potential winners to consider
+* probability of winning jackpot
+* (also: method of computing probability, summing or inverse of non-winners)
+* (also: whether pot is to be split)
+
 outputs:
--- expected value of a ticket (incorporating odds and payout if split ticket)
+
+* expected value of a ticket (incorporating odds and payout if split ticket)
 
 ```{r}
 ev_split <- function(jackpot, tickets, max_winners, prob_win, method, split){
@@ -401,9 +405,11 @@ ev_split <- function(jackpot, tickets, max_winners, prob_win, method, split){
 ```
 
 
-## 3.2. test
+## 3.2. Test
 
-```{r}
+Test cases for function (long endless scroll of output not displayed in Rmd).
+
+```{r, echo=FALSE, results='hide'}
 print("---1---")
 850e6*(1/302575350)
 print("---2---")
@@ -471,15 +477,15 @@ ev_split(jackpot = 850e6, tickets = 1000e6, max_winners = 10, prob_win = (1/3025
 
 
 ```
-## 3.3. split pot odds, calculate
+## 3.3. Calculate
 
 calculate odds of split pot, as function of number of tickets sold
 
 Plan:
-- loop from 1 million to 1 billion ticket sales, by million
-- loop from 0 winners to 10 winners
-- calculate the odds of winning, for each combination
-- store results
+* loop from 1 million to 1 billion ticket sales, by million
+* loop from 0 winners to 10 winners
+* calculate the odds of winning, for each combination
+* store results
 
 ```{r}
 # set values to loop through
@@ -510,16 +516,42 @@ for (num_winners_i in loop_winners){
 
 ```
 
-## 3.4. view results (tabular)
+## 3.4. View Results (Tabular)
 
 ```{r}
-dat_split
+dat_split_mod <-
+dat_split %>% 
+  arrange(num_tickets, num_winners) %>% 
+  pivot_wider(names_from = num_winners,
+              values_from = prob) %>% 
+  rename(prob_0 = "0", prob_1 = "1", prob_2 = "2", prob_3 = "3", prob_4 = "4",
+         prob_5 = "5", prob_6 = "6", prob_7 = "7", prob_8 = "8", prob_9 = "9", prob_10 = "10") %>% 
+  mutate(prob_5_plus = 1 - (prob_0 + prob_1 + prob_2 + prob_3 + prob_4)) %>%
+  #mutate(check_1 = prob_0 + prob_1 + prob_2 + prob_3 + prob_4 + prob_5,
+  #       check_2 = prob_0 + prob_1 + prob_2 + prob_3 + prob_4,
+  #       check_3 = prob_0 + prob_1 + prob_2 + prob_3 + prob_4 + prob_6)
+  select(num_tickets, prob_0, prob_1, prob_2, prob_3, prob_4, prob_5_plus, everything()) %>% 
+  pivot_longer(cols = c("prob_0", "prob_1", "prob_2", "prob_3", "prob_4", "prob_5_plus"),
+               names_to = "num_winners",
+               values_to = "prob") %>% 
+  select(num_tickets, num_winners, prob) %>% 
+  mutate(num_winners = case_when(num_winners == "prob_0" ~ "None",
+                                 num_winners == "prob_1" ~ "One",
+                                 num_winners == "prob_2" ~ "Two",
+                                 num_winners == "prob_3" ~ "Three",
+                                 num_winners == "prob_4" ~ "Four",
+                                 num_winners == "prob_5_plus" ~ "Five or More"),
+         num_winners = factor(num_winners,
+                              levels = c("None", "One", "Two", "Three", "Four", "Five or More")))
+
+dat_split_mod
+
 ```
 
-## 3.5. prob sums
+## 3.5. Probability Sums
 
-- we can see that, the first ten winners, even at 1 billion tickets, account for more than 99.9% of winners
-- (i.e. we gain little from further incorporating odds of 11, 12, 13+ winners)
+* we can see that, the first ten winners, even at 1 billion tickets, account for more than 99.9% of winners
+* (i.e. we gain little from further incorporating odds of 11, 12, 13+ winners)
 
 ```{r}
 dat_split %>% 
@@ -529,50 +561,56 @@ dat_split %>%
 
 ```
 
-## 3.6. graph: split pot (without empirical overlay)
+## 3.6. Graph: Split Pot
 
 ```{r, fig.height=6, fig.width=12}
 
-dat_split %>%
-  filter(num_winners <= 5) %>% 
-  mutate(num_winners = as.factor(num_winners)) %>% 
+dat_split_mod %>%
   ggplot(aes(x = num_tickets,
              y = prob,
              color = num_winners)) +
   geom_line(size = 1.25,
             alpha = 0.5) +
-  scale_x_continuous(labels = scales::comma,
+  scale_x_continuous(labels = seq(0, 1000, 100),
                      breaks = seq(0, 1000, 100)*1e6) +
   scale_y_continuous(breaks = seq(0, 1, 0.1)) +
-  labs(x = "Number of Tickets Sold",
-       y = "Probability of This Number of Winners",
-       title = "Probability of Various Split Pots",
+  scale_color_manual(values = c("red", "green4", "blue4", "dodgerblue2", "skyblue", "turquoise1")) +
+  labs(x = "Number of Tickets Sold \n (millions)",
+       y = "Probability of This Many Winners",
+       title = "Odds of a Split Pot v. Number of Tickets Sold",
        color = "Numbers of Winners") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 0),
-        plot.title = element_text(hjust = 0.5))
+  theme(axis.text.x = element_text(angle = 0,
+                                   size = 10),
+        axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0),
+                                    size = 12),
+        axis.title.y = element_text(margin = margin(t = 0, b = 0, r = 10, l = 0),
+                                    size = 12),
+        plot.title = element_text(hjust = 0.5,
+                                  size = 15),
+        legend.position = "right")
+        
 
 ```
 
-## 3.6. graph: split pot (with empirical overlay)
+## 3.6. Graph: Split Pot (w/ overlay)
 
 ```{r, fig.height=6, fig.width=12}
 plot_3.6 <-
-dat_split %>%
-  filter(num_winners <= 5) %>% 
-  mutate(num_winners = as.factor(num_winners)) %>% 
+dat_split_mod %>%
   ggplot(aes(x = num_tickets,
-             y = prob,
-             color = num_winners)) +
-  geom_line(size = 1.25,
-            alpha = 0.5) +
-  scale_x_continuous(labels = scales::comma,
-                     breaks = seq(0, 1000, 100)*1e6) +
-  scale_y_continuous(breaks = seq(0, 1, 0.1)) +
-  labs(x = "Number of Tickets Sold",
-       y = "Probability of This Number of Winners",
-       title = "Probability of Various Split Pots",
-       color = "Numbers of Winners") +
+               y = prob,
+               color = num_winners)) +
+    geom_line(size = 1.25,
+              alpha = 0.5) +
+    scale_x_continuous(labels = seq(0, 1000, 100),
+                       breaks = seq(0, 1000, 100)*1e6) +
+    scale_y_continuous(breaks = seq(0, 1, 0.1)) +
+    scale_color_manual(values = c("red", "green4", "blue4", "dodgerblue2", "skyblue", "turquoise1")) +
+    labs(x = "Number of Tickets Sold \n (millions)",
+         y = "Probability of This Number of Winners",
+         title = "Odds of a Split Pot v. Number of Tickets Sold",
+         color = "Numbers of Winners") +
   annotate("rect",
          xmin = min(lott_clean$sales),
          xmax = quantile(lott_clean$sales, prob = 0.50),
@@ -627,13 +665,20 @@ dat_split %>%
            angle = 90,
            size = 4) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 0),
-        plot.title = element_text(hjust = 0.5))
-
+  theme(axis.text.x = element_text(angle = 0,
+                                     size = 10),
+          axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0),
+                                      size = 12),
+          axis.title.y = element_text(margin = margin(t = 0, b = 0, r = 10, l = 0),
+                                      size = 12),
+          plot.title = element_text(hjust = 0.5,
+                                    size = 15),
+          legend.position = "right")
+  
 plot_3.6
 ```
 
-## 3.6. save
+## 3.6. Save
 
 ```{r}
 if (plot_save){
@@ -649,23 +694,25 @@ ggsave(plot = plot_3.6,
 
 The goal here is to figure out the cash value of various jackpots, from their advertised (i.e. annuity) amounts.
 Can't find a super clear answer (at least to me on this). Below are the more details written state rules/laws for the lottery.
-- https://vtlottery.com/sites/default/files/pdf/Rules-MM%202017-10.pdf
-- https://static.coloradolottery.com/media/filer_public/26/2f/262feb46-6929-4707-969a-5d2b210b4d90/rule_14c_-_mega_millions.pdf 
+
+* https://vtlottery.com/sites/default/files/pdf/Rules-MM%202017-10.pdf
+* https://static.coloradolottery.com/media/filer_public/26/2f/262feb46-6929-4707-969a-5d2b210b4d90/rule_14c_-_mega_millions.pdf 
 
 But honestly, I don't really understand these, so will just look at historical records of jackpot size, and compare advertised (annuity) amount of the jackpot, to the stated equivalent cash prize.
 
 Used, wayback machine for this:
-- 2021: https://web.archive.org/web/20210101000000*/https://www.megamillions.com/
-- 2020: https://web.archive.org/web/20200315000000*/https://www.megamillions.com/
-- 2019: https://web.archive.org/web/20190115000000*/https://www.megamillions.com/
-- 2018: https://web.archive.org/web/20180701000000*/https://www.megamillions.com/
-- 2017: https://web.archive.org/web/20170701000000*/https://www.megamillions.com/
+
+* 2021: https://web.archive.org/web/20210101000000*/https://www.megamillions.com/
+* 2020: https://web.archive.org/web/20200315000000*/https://www.megamillions.com/
+* 2019: https://web.archive.org/web/20190115000000*/https://www.megamillions.com/
+* 2018: https://web.archive.org/web/20180701000000*/https://www.megamillions.com/
+* 2017: https://web.archive.org/web/20170701000000*/https://www.megamillions.com/
 
 (Seems like the date of the screenshots are kind of out of wack with the date of the drawing. But when you click on the link, it gives you jackpot, cash, and date of drawing, so those are all correctly linked. And that is what I am recording, date of drawing, not date of screenshot.)
 
 Method: clicked through at least one screenshot on each month, in the years 2021 to 2017 (only up to October 31, when rules changed). Not every month, while having a screen shot had a unique drawing value. So just, noted where there was a unique drawing value. And noted that. Not perfectly rigorously. Fully rigorous method could do a full scrape from here.
 
-### 4.1. enter data
+## 4.1. Enter Data
 
 ```{r}
 cash <-
@@ -734,7 +781,7 @@ c(48e6, 29e6, "2017-11-03")
 
 ```
 
-### 4.2. reshape data
+## 4.2. Reshape Data
 
 ```{r}
 # name columns
@@ -753,7 +800,7 @@ cash
 
 ```
 
-### 4.3. graph: annuity & percentage
+## 4.3. Graph: Annuity & Percentage
 
 ```{r, fig.height=7, fig.width=12}
 coeff <- max(cash$advertised)/max(cash$perc)
@@ -794,7 +841,7 @@ ggplot(aes(x = date)) +
 plot_4.3
 
 ```
-### 4.3. save
+## 4.3. Save
 
 ```{r}
 if (plot_save){
@@ -805,14 +852,14 @@ ggsave(plot = plot_4.3,
 }
 ```
 
-### 4.x. graph: annuity, cash, & percentage
+## 4.4. Graph: Annuity, Cash, & Percentage
 
 ```{r, fig.height=7, fig.width=12}
 coeff <- max(cash$advertised)/max(cash$perc)
 color_advertised <- "black"
 color_perc <- "steelblue3" #"dodgerblue4"
 
-plot_4.x <-
+plot_4.4 <-
 cash %>% 
   pivot_longer(cols = c("advertised", "cash"),
                names_to = "claim_method",
@@ -861,18 +908,28 @@ ggplot(aes(x = date)) +
         panel.grid.minor = element_blank(),
         legend.position = "top")
 
-plot_4.x
+plot_4.4
 
 ```
+## 4.4. Save
 
+```{r}
+if (plot_save){
+ggsave(plot = plot_4.4,
+       filename = "cash_jackpot_bothlines.pdf",
+       width = 15,
+       height = 7)
+}
+```
 
-### 4.4. quantiles
+## 4.5. Quantiles
 
 ```{r}
 quantile(x = cash$perc,
          probs = c(0, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99, 1))
 ```
-### 4.5. median, each year
+
+## 4.6. Median, Each Year
 
 ```{r}
 cash %>% 
@@ -881,7 +938,7 @@ cash %>%
   summarise(median = median(perc))
 ```
 
-### 4.6. SET: cash value %
+## 4.7. SET: Cash Value %
 
 This is where I will set coefficient (proportion) to multiply advertised (annuity) jackpot values by.
 Since I don't have the same number of observations for every year, I will just take the mean of the median cash percent for each year.
@@ -901,34 +958,13 @@ cash_coeff
 
 ```
 
-## 4.7. net present value calculator
-
-this is a function to calculate net present values
-- source: https://www.investopedia.com/terms/n/npv.asp
-
-```{r}
-total <- 0
-start <- (1/4)*1.5e6
-
-for (year in 0:29){
-  
-  # annuity value
-  print(paste0("year: ", year))
-  print(paste0("payout: ", start * 1.05^year))
-  total <- total + (start * 1.05^year)
-  print(paste0("total: ", total))
-  
-  print("-------------")
-  
-}
-```
 
 # 5. Taxes
 
-## 5.1. function: federal taxes
+## 5.1. Function: federal taxes
 
-- source: https://www.nerdwallet.com/article/taxes/federal-income-tax-brackets
-- source: https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments-for-tax-year-2020
+* source: https://www.nerdwallet.com/article/taxes/federal-income-tax-brackets
+* source: https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments-for-tax-year-2020
 
 ```{r}
 # recursive function to calculate taxes
@@ -962,9 +998,11 @@ fed_taxes <- function(income){
 
 ```
 
-## 5.1. test
+## 5.1. Test
 
-```{r}
+Test cases for function (long endless scroll of output not displayed in Rmd).
+
+```{r, echo=TRUE, results='hide'}
 fed_taxes(-100)
 fed_taxes(0)
 fed_taxes(1)
@@ -995,12 +1033,13 @@ fed_taxes(50e3)
 fed_taxes(100e3)
 ```
 
-## 5.2. function: state taxes
+## 5.2. Function: state taxes
 
-- Going to implement tax rates from state with highest income taxes (CA)
-- source: https://turbotax.intuit.com/tax-tips/fun-facts/states-with-the-highest-and-lowest-taxes/L6HPAVqSF 
-- source: https://www.nerdwallet.com/article/taxes/california-state-tax 
-- source: https://smartasset.com/taxes/california-tax-calculator 
+Going to implement tax rates from state with highest income taxes (CA):
+
+* source: https://turbotax.intuit.com/tax-tips/fun-facts/states-with-the-highest-and-lowest-taxes/L6HPAVqSF 
+* source: https://www.nerdwallet.com/article/taxes/california-state-tax 
+* source: https://smartasset.com/taxes/california-tax-calculator 
 
 ```{r}
 # recursive function to calculate taxes
@@ -1044,9 +1083,11 @@ state_taxes <- function(income){
 
 ```
 
-## 5.2. test
+## 5.2. Test
 
-```{r}
+Test cases for function (long endless scroll of output not displayed in Rmd).
+
+```{r, echo=TRUE, results='hide'}
 state_taxes(-10)
 state_taxes(0)
 state_taxes(8931)
@@ -1064,11 +1105,15 @@ state_taxes(1000e6)
 
 state_taxes(87701-4601)
 ```
-# 6. Other Prizes
+
+# 6. Smaller Prizes
 
 The goal here is to calculate the expected value of the others prizes in the lottery
 
--- odds for smaller prizes can be found here (1) https://www.megamillions.com/how-to-play, and (2) calculations can be found here http://www.durangobill.com/MegaMillionsOdds.html (actually the latter are more exact)
+Odds for smaller prizes can be found here:
+
+* (1) https://www.megamillions.com/how-to-play and 
+* (2) calculations can be found here http://www.durangobill.com/MegaMillionsOdds.html (actually the latter are more exact)
 
 ```{r}
 # total possible ticket combinations
@@ -1112,27 +1157,31 @@ other_prizes_taxes
 ```
 
 
-# 7. Jackpot Size v. Expect Value
+# 7. Expected Value
 
 The expected value is a function of:
-- net present value (cash value of prize)
-- taxes (federal & state)
-- number of tickets sold
 
-Here, I try to identify how each of these affect the expected value of a ticket. And then graph those effeccts
+* net present value (cash value of prize)
+* taxes (federal & state)
+* number of tickets sold
+
+Here, I try to identify how each of these affect the expected value of a ticket. And then graph those effects
 
 ## 7.1. Theoretical EVs
 
 The goal here is to compute and then graph expected value of a ticket (EV) as function of:
--- jackpot value
--- number of tickets sold
--- whether the pot will be split, in the case of multiple winners
 
--- must also select max # winners to cycle through (picked: 100)
--- note: will compute
----- 1. ev: expected value, just including jackpot
----- 2. ev_full: expected value, including smaller jackpots as well
----- 3. ev_basic: expected value, if you buy tickets systematically (not randomly pick) [not fully computed out]
+* jackpot value
+* number of tickets sold
+* whether the pot will be split, in the case of multiple winners
+
+Must also select max # winners to cycle through (picked: 100).
+
+Note: will compute
+
+* 1. ev: expected value, just including jackpot
+* 2. ev_full: expected value, including smaller jackpots as well
+* 3. ev_basic: expected value, if you buy tickets systematically (not randomly pick) [not fully computed out]
 
 
 ```{r}
@@ -1191,7 +1240,7 @@ for (jackpot_i in jackpots){
 EV
 ```
 
-## 7.2. graph: Theoretical EVs
+## 7.2. Graph: Theoretical EVs
 
 ```{r, fig.width=15, fig.height=8}
 EV_long <-
@@ -1266,7 +1315,7 @@ plot_7.2
 
 ```
 
-## 7.2. save
+## 7.2. Save
 
 ```{r}
 if (plot_save){
@@ -1333,7 +1382,7 @@ lott_clean %>%
 EV_time
 ```
 
-## 7.3. graph: EV over time
+## 7.3. Graph: EV over Time
 
 ```{r, fig.height=7, fig.width=15}
 
@@ -1363,7 +1412,7 @@ ggplot(aes(x = as.Date(date),
 plot_7.3
 ```
 
-## 7.4.graph: EV v. jackpot size
+## 7.4. Graph: EV v. Jackpot Size
 
 ```{r, fig.height=6, fig.width=15}
 EV_time %>% 
@@ -1385,7 +1434,7 @@ ggplot(aes(x = jackpot,
 ```
 
 
-# MISC/END
+# END/MISC
 
 ```{r}
 quantile(x = round(lott_clean$sales/1e6), probs = c(0, 0.01, 0.05, 0.1, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.70, 0.75, 0.80, 0.9, 0.95, 0.99, 1))
