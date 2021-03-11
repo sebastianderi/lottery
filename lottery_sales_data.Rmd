@@ -753,7 +753,7 @@ cash
 
 ```
 
-### 4.3. graph
+### 4.3. graph: annuity & percentage
 
 ```{r, fig.height=7, fig.width=12}
 coeff <- max(cash$advertised)/max(cash$perc)
@@ -805,18 +805,23 @@ ggsave(plot = plot_4.3,
 }
 ```
 
-### 4.x. graph (both absolute values)
+### 4.x. graph: annuity, cash, & percentage
 
 ```{r, fig.height=7, fig.width=12}
 coeff <- max(cash$advertised)/max(cash$perc)
-color_advertised <- "dodgerblue4"
-color_perc <- "black"
+color_advertised <- "black"
+color_perc <- "steelblue3" #"dodgerblue4"
 
 plot_4.x <-
 cash %>% 
+  pivot_longer(cols = c("advertised", "cash"),
+               names_to = "claim_method",
+               values_to = "value") %>% 
+  mutate(claim_method = case_when(claim_method == "advertised" ~ "Advertised/Annuity Value",
+                                  claim_method == "cash" ~ "Cash Value")) %>% 
 ggplot(aes(x = date)) +
-  geom_line(aes(y = advertised),
-            color = color_advertised,
+  geom_line(aes(y = value,
+                color = claim_method),
             size = 2,
             alpha = 0.5) +
   geom_point(aes(y = perc * coeff),
@@ -826,26 +831,40 @@ ggplot(aes(x = date)) +
             size = 1,
             alpha = 0.5) +
   scale_x_date(name = "Date",
-               date_labels = "%Y (%b)",
-               date_breaks = "1 month") +
-  scale_y_continuous(labels = scales::label_dollar(),
-                     breaks = c(0, 1:17*100e6),
-                     name = "Advertised Jackpot Value (Annuity)",
+               date_labels = "%Y",
+               date_breaks = "1 year") +
+  scale_y_continuous(labels = c("$0",
+                                paste0("$", seq(1, 9, 1)*100, "m"),
+                                paste0("$", seq(1, 1.6, 0.1), "b")),
+                     breaks = c(0, 1:16*100e6),
+                     name = "Jackpot Value",
                      sec.axis = sec_axis(trans = ~.*(1/coeff),
-                                       name = "Cash Value (as % of Advertised Jackpot)",
+                                       name = "Cash Value (as % of Advertised/Annuity Value)",
                                        breaks = seq(0, 100, 10))) +
-  labs(title = "Advertised Jackpot Size & Cash Value of Jackpot, Over Time") +
+  scale_color_manual(values = c("green4", "darkorchid3")) +
+  labs(title = "Jackpot Size, Over Time",
+       color = "") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.text.y.left = element_text(color = color_advertised, size = 10),
-        axis.title.y.left = element_text(color = color_advertised),
-        axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10)),
-        axis.text.x = element_text(angle = 90),
-        panel.grid.minor = element_blank())
+  theme(plot.title = element_text(hjust = 0.5,
+                                  size = 15),
+        axis.text.y.left = element_text(color = color_advertised,
+                                        size = 10),
+        axis.text.y.right = element_text(color = color_perc,
+                                        size = 10),
+        axis.title.y.left = element_text(color = color_advertised,
+                                         margin = margin(t = 0, r = 10, b = 0, l = 0),
+                                         size = 15),
+        axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10),
+                                          size = 15,
+                                          color = color_perc),
+        axis.text.x = element_text(angle = 0),
+        panel.grid.minor = element_blank(),
+        legend.position = "top")
 
 plot_4.x
 
 ```
+
 
 ### 4.4. quantiles
 
