@@ -1412,7 +1412,7 @@ ggplot(aes(x = as.Date(date),
 plot_7.3
 ```
 
-## 7.4. Graph: EV v. Jackpot Size
+## 7.4. Graph: EV v. Jackpot Size (paneled)
 
 ```{r, fig.height=6, fig.width=15}
 EV_time %>% 
@@ -1423,10 +1423,6 @@ ggplot(aes(x = jackpot,
   geom_point(alpha = 0.25) +
   geom_line() +
   geom_hline(yintercept = 2) +
-  #geom_smooth(method = "lm", #"loess",
-  #            se = FALSE,
-  #            alpha = 0.25) +
-  #facet_grid(year~split) +
   facet_grid(split~year,
              scales = "free_x")+ 
   theme_bw()
@@ -1434,10 +1430,101 @@ ggplot(aes(x = jackpot,
 ```
 
 
+## 7.5. Graph: EV v. Jackpot Size (single)
+
+Note, solution to having boxes appear outside of plot limits can be found here:
+
+* https://stackoverflow.com/questions/50665514/how-to-plot-rectangles-that-spans-outside-of-the-plot-in-ggplot?noredirect=1&lq=1
+
+```{r, fig.height=8, fig.width=12}
+EV_time %>% 
+  filter(ev_type == "ev_cash_s") %>% 
+ggplot(aes(x = jackpot,
+           y = ev)) +
+  # COLORED BOXES
+  annotate("rect",
+       xmin = -100e6,
+       xmax = 1.8e9,
+       ymin = -0.5,
+       ymax = 2,
+       fill = "red",
+       alpha = 0.2) +
+  annotate("rect",
+       xmin = -100e6,
+       xmax = 1.8e9,
+       ymin = 2,
+       ymax = 3.5,
+       fill = "green",
+       alpha = 0.2) +
+  # DOWN ARROW
+  annotate(geom = "text",
+           x = 800e6,
+           y = 1.92,
+           label = "Losing Bet",
+           angle = 0,
+           size = 4) +
+  geom_segment(aes(x = 800e6,
+                   y = 1.85,
+                   xend = 800e6,
+                   yend = 1.6),
+                  arrow = arrow(length = unit(0.3, "cm"),
+                                type = "closed")) +
+  # UP ARROW
+  annotate(geom = "text",
+           x = 800e6,
+           y = 2.08,
+           label = "Winning Bet",
+           angle = 0,
+           size = 4) +
+  geom_segment(aes(x = 800e6,
+                   y = 2.15,
+                   xend = 800e6,
+                   yend = 2.4),
+                  arrow = arrow(length = unit(0.3, "cm"),
+                                type = "closed")) +
+  # DATA
+  geom_point(size = 3,
+             alpha = 0.25) +
+  geom_line(size = 0.85,
+            alpha = 0.5) +
+  geom_hline(yintercept = 2,
+             color = "black",
+             size = 1,
+             linetype = "dotted") +
+  # AXES
+  scale_y_continuous(breaks = seq(0, 3, 0.25),
+                     labels = scales::label_dollar()) +
+  scale_x_continuous(labels = c("$0", paste0("$", seq(1, 9, 1)*100, "m"), paste0("$", seq(1, 1.6, 0.1), "b")),
+                     breaks = c(0, 1:16*100e6)) +
+  coord_cartesian(xlim = c(0, 1.6e9),
+                  ylim = c(0, 3)) +
+  # LABELS
+  labs(title = paste0("Expected Value v. Jackpot Size",
+                      "\n after accounting for ",
+                      "(a) taxes, ",
+                      "(b) cash value discount, ",
+                      "(c) ticket sales increasing odds of split pot"),
+       y = "Expected Value",
+       x = "Advertised Jackpot Size") +
+  # STYLES
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  size = 13,
+                                  margin = margin(t = 0, b = 10, l = 0, r = 0)),
+        axis.title.x = element_text(size = 13,
+                                    margin = margin(t = 10, b = 0, r = 0, l = 0)),
+        axis.title.y = element_text(size = 13,
+                                    margin = margin(t = 0, b = 0, r = 10, l = 0)))
+
+```
+
 # END/MISC
 
 ```{r}
-quantile(x = round(lott_clean$sales/1e6), probs = c(0, 0.01, 0.05, 0.1, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.70, 0.75, 0.80, 0.9, 0.95, 0.99, 1))
-print("------------------------------------------------")
-quantile(x = round(lott_clean$jackpot/1e6), probs = c(0, 0.01, 0.05, 0.1, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.70, 0.75, 0.80, 0.9, 0.95, 0.99, 1))
+ggplot(mtcars) +
+  geom_rect(aes(xmin=15,ymin=5,xmax=30,ymax=6), fill="red") +
+  geom_rect(aes(xmin=15,ymin=6,xmax=40,ymax=7), fill="blue") +
+  geom_point(aes(x=mpg,y=cyl)) +
+  coord_cartesian(xlim = c(10,35))
 ```
+
