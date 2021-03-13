@@ -379,11 +379,11 @@ ev_split(jackpot = 400e6, tickets = 300e6, max_winners = 10, prob_win = (1/30257
 400e6*(1-prob_k(num_winners = 0, num_tickets = 300e6, prob_win = (1/302575350)))/300e6
 print("---5---")
 t1 <- Sys.time()
-ev_split(jackpot = 850e6, tickets = 1, max_winners = 1, prob_win = (1/302575350), method = "inverse", split = TRUE)
-ev_split(jackpot = 850e6, tickets = 1, max_winners = 2, prob_win = (1/302575350), method = "inverse", split = TRUE)
-ev_split(jackpot = 850e6, tickets = 1, max_winners = 5, prob_win = (1/302575350), method = "inverse", split = TRUE)
-ev_split(jackpot = 850e6, tickets = 1, max_winners = 10, prob_win = (1/302575350), method = "inverse", split = TRUE)
-ev_split(jackpot = 850e6, tickets = 1, max_winners = 100, prob_win = (1/302575350), method = "inverse", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = NA, prob_win = (1/302575350), method = "inverse", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = NA, prob_win = (1/302575350), method = "inverse", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = NA, prob_win = (1/302575350), method = "inverse", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = NA, prob_win = (1/302575350), method = "inverse", split = TRUE)
+ev_split(jackpot = 850e6, tickets = 1, max_winners = 0, prob_win = (1/302575350), method = "inverse", split = TRUE)
 ev_split(jackpot = 850e6, tickets = 1, max_winners = 1e6, prob_win = (1/302575350), method = "inverse", split = TRUE)
 Sys.time() - t1
 print("---6---")
@@ -511,6 +511,14 @@ dat_split %>%
 
 ## 3.6. Graph: Split Pot
 
+Going to graph this with:
+
+* full range of number of winners considered (0, 1, 2, 3, 4, 5 or more)
+* zero winners
+* 1 winner
+
+The latter one are for didactic/explanatory purposes.
+
 ```{r, fig.height=6, fig.width=12}
 
 dat_split_mod %>%
@@ -540,6 +548,70 @@ dat_split_mod %>%
         
 
 ```
+
+```{r, fig.height=6, fig.width=12}
+
+dat_split_mod %>%
+  filter(num_winners == "None") %>% 
+  ggplot(aes(x = num_tickets,
+             y = prob,
+             color = num_winners)) +
+  geom_line(size = 1.25,
+            alpha = 0.5) +
+  scale_x_continuous(labels = seq(0, 1000, 100),
+                     breaks = seq(0, 1000, 100)*1e6) +
+  scale_y_continuous(breaks = seq(0, 1, 0.1)) +
+  scale_color_manual(values = c("red", "green4", "blue4", "dodgerblue2", "skyblue", "turquoise1")) +
+  labs(x = "Number of Tickets Sold \n (millions)",
+       y = "Probability of This Many Winners",
+       title = "Odds of a Split Pot v. Number of Tickets Sold",
+       color = "Numbers of Winners") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 0,
+                                   size = 10),
+        axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0),
+                                    size = 12),
+        axis.title.y = element_text(margin = margin(t = 0, b = 0, r = 10, l = 0),
+                                    size = 12),
+        plot.title = element_text(hjust = 0.5,
+                                  size = 15),
+        legend.position = "right")
+        
+
+```
+
+```{r, fig.height=6, fig.width=12}
+
+dat_split_mod %>%
+  filter(num_winners == "None" | num_winners == "One") %>% 
+  ggplot(aes(x = num_tickets,
+             y = prob,
+             color = num_winners)) +
+  geom_line(size = 1.25,
+            alpha = 0.5) +
+  scale_x_continuous(labels = seq(0, 1000, 100),
+                     breaks = seq(0, 1000, 100)*1e6) +
+  scale_y_continuous(breaks = seq(0, 1, 0.1),
+                     limits = c(0, 1)) +
+  scale_color_manual(values = c("red", "green4")) +
+  labs(x = "Number of Tickets Sold \n (millions)",
+       y = "Probability of This Many Winners",
+       title = "Odds of a Split Pot v. Number of Tickets Sold",
+       color = "Numbers of Winners") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 0,
+                                   size = 10),
+        axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0),
+                                    size = 12),
+        axis.title.y = element_text(margin = margin(t = 0, b = 0, r = 10, l = 0),
+                                    size = 12),
+        plot.title = element_text(hjust = 0.5,
+                                  size = 15),
+        legend.position = "right")
+        
+
+```
+
 
 ## 3.6. Graph: Split Pot (w/ overlay)
 
@@ -984,7 +1056,17 @@ fed_taxes(100e3)
 
 ## 5.2. Function: state taxes
 
-Going to implement tax rates from state with highest income taxes (CA):
+Initially was going to calculate taxes for California residents. BUt apparently California residents are exempt from paying state income tax on lottery winnings. Sources: 
+
+* https://static.www.calottery.com/-/media/Project/calottery/PWS/PDFs/Winners-Handbook-1127-FINAL.pdf
+* https://www.cnbc.com/2019/09/20/what-you-pay-in-taxes-if-you-hit-211-million-mega-millions-jackpot.html
+
+
+Going to implement state income tax rates from New York:
+
+* https://www.nerdwallet.com/article/taxes/new-york-state-tax
+
+California Tax Brackets (for reference):
 
 * source: https://turbotax.intuit.com/tax-tips/fun-facts/states-with-the-highest-and-lowest-taxes/L6HPAVqSF 
 * source: https://www.nerdwallet.com/article/taxes/california-state-tax 
@@ -993,39 +1075,75 @@ Going to implement tax rates from state with highest income taxes (CA):
 ```{r}
 # recursive function to calculate taxes
 state_taxes <- function(income){
-
-  if (income <= 0) {
-    return(0)
+  
+  state <- "NY" # create internal state variable (not passed to function bc then have to rewrite a bunch of other code below)
+  
+  if (state == "NY"){
+      if (income <= 0) {
+        return(0)
+      }
+      if (income > 1077550){
+        return((0.0882) * (income - 1077550) + state_taxes(1077550))
+      }
+      if (income <= 1077550 & income > 215400){
+        return(0.0685 * (income - 215400) + state_taxes(215400))
+      }
+      if (income <= 215400 & income > 80650){
+        return(0.0641 * (income - 80650) + state_taxes(80650))
+      }
+      if (income <= 80650 & income > 21400){
+        return(0.0609 * (income - 21400) + state_taxes(21400))
+      }
+      if (income <= 21400 & income > 13900){
+        return(0.059 * (income - 13900) + state_taxes(13900))
+      }
+      if (income <= 13900 & income > 11700){
+        return(0.0525 * (income - 11700) + state_taxes(11700))
+      }
+      if (income <= 11700 & income > 8500){
+        return(0.045 * (income - 8500) + state_taxes(8500))
+      }
+      if (income <= 8500 & income > 0){
+        return(0.04 * income)
+      }
   }
-  if (income > 1e6){
-    return((0.123+0.01) * (income - 1e6) + state_taxes(1e6))
-  }
-  if (income <= 1e6 & income > 599012){
-    return(0.123 * (income - 599012) + state_taxes(599012))
-  }
-  if (income <= 599012 & income > 359407){
-    return(0.113 * (income - 359407) + state_taxes(359407))
-  }
-  if (income <= 359407 & income > 299508){
-    return(0.103 * (income - 299508) + state_taxes(299508))
-  }
-  if (income <= 299508 & income > 58634){
-    return(0.093 * (income - 58634) + state_taxes(58634))
-  }
-  if (income <= 58634 & income > 46394){
-    return(0.08 * (income - 46394) + state_taxes(46394))
-  }
-  if (income <= 46394 & income > 33421){
-    return(0.06 * (income - 33421) + state_taxes(33421))
-  }
-  if (income <= 33421 & income > 21175){
-    return(0.04 * (income - 21175) + state_taxes(21175))
-  }
-  if (income <= 21175 & income > 8932){
-    return(0.02 * (income - 8932) + state_taxes(8932))
-  }
-  if (income <= 8932 & income > 0){
-    return(0.01 * income)
+  
+  # just leaving this here, in case I ever want to use it
+  
+  if (state == "CA"){
+      if (income <= 0) {
+        return(0)
+      }
+      if (income > 1e6){
+        return((0.123+0.01) * (income - 1e6) + state_taxes(1e6))
+      }
+      if (income <= 1e6 & income > 599012){
+        return(0.123 * (income - 599012) + state_taxes(599012))
+      }
+      if (income <= 599012 & income > 359407){
+        return(0.113 * (income - 359407) + state_taxes(359407))
+      }
+      if (income <= 359407 & income > 299508){
+        return(0.103 * (income - 299508) + state_taxes(299508))
+      }
+      if (income <= 299508 & income > 58634){
+        return(0.093 * (income - 58634) + state_taxes(58634))
+      }
+      if (income <= 58634 & income > 46394){
+        return(0.08 * (income - 46394) + state_taxes(46394))
+      }
+      if (income <= 46394 & income > 33421){
+        return(0.06 * (income - 33421) + state_taxes(33421))
+      }
+      if (income <= 33421 & income > 21175){
+        return(0.04 * (income - 21175) + state_taxes(21175))
+      }
+      if (income <= 21175 & income > 8932){
+        return(0.02 * (income - 8932) + state_taxes(8932))
+      }
+      if (income <= 8932 & income > 0){
+        return(0.01 * income)
+      }
   }
 
 }
@@ -1039,15 +1157,28 @@ Test cases for function (long endless scroll of output not displayed in Rmd).
 ```{r, echo=TRUE, results='hide'}
 state_taxes(-10)
 state_taxes(0)
-state_taxes(8931)
-state_taxes(8932)
-state_taxes(8933)
-state_taxes(46394)
-state_taxes(586354)
-state_taxes(599011)
-state_taxes(599012)
-state_taxes(599013)
-state_taxes(1e6)
+state_taxes(8499)
+state_taxes(8500)
+state_taxes(8501)
+state_taxes(11699)
+state_taxes(11700)
+state_taxes(11701)
+state_taxes(13899)
+state_taxes(13900)
+state_taxes(13901)
+state_taxes(21399)
+state_taxes(21400)
+state_taxes(21401)
+state_taxes(80649)
+state_taxes(80650)
+state_taxes(80651)
+state_taxes(215399)
+state_taxes(215400)
+state_taxes(215401)
+state_taxes(1077549)
+state_taxes(1077550)
+state_taxes(1077551)
+state_taxes(2e6)
 state_taxes(10e6)
 state_taxes(100e6)
 state_taxes(1000e6)
@@ -1135,7 +1266,8 @@ Note: will compute
 
 ```{r}
 # preset value, to loop through & use
-jackpots <- c(1, 1e3, 1e6, 10e6, 20e6, 40e6, 50e6, 75e6, 100e6, 125e6, 150e6, 175e6, 200e6, 300e6, 400e6, 500e6, 750e6, 1e9, 1.5e9, 1.75e9, 2e9, 5e9, 10e9)
+jackpots <- c(1, 1e3, 1e6, 10e6, 20e6, 40e6, 50e6, 75e6, 100e6, 125e6, 150e6, 175e6, 200e6, 300e6, 400e6, 500e6, 600e6,
+              700e6, 800e6, 900e6, 1e9, 1.1e9, 1.2e9, 1.3e9, 1.4e9, 1.5e9, 1.6e9, 1.7e9, 1.8e9, 1.9e9, 2e9, 5e9, 10e9)
 tickets <- c(1, 10, 1e3, 10e3, 100e3, 1e6, 10e6, 15e6, 20e6, 25e6, 30e6, 35e6, 40e6, 50e6, 100e6, 200e6, 500e6, 750e6, 1e9, 2e9, 5e9, 10e9)
 max_winners <- 100
 splits <- c(TRUE, FALSE)
@@ -1156,6 +1288,7 @@ i <- 0
 for (jackpot_i in jackpots){
   for (tickets_i in tickets){
     for (split_i in splits){
+      
       i <- i + 1
       EV$jackpot[i] <- jackpot_i
       EV$tickets[i] <- tickets_i
@@ -1166,14 +1299,19 @@ for (jackpot_i in jackpots){
                              prob_win = (1/302575350),
                              method = "sum",
                              split = split_i)
+      
       EV$ev_full[i] <- EV$ev_jj[i] + other_prizes
+      
       EV$ev_full_cash[i] <- ev_split(jackpot = jackpot_i * cash_coeff,
                                 tickets = tickets_i,
                                 max_winners = max_winners,
                                 prob_win = (1/302575350),
                                 method = "sum",
                                 split = split_i) + other_prizes
-      EV$ev_full_taxes[i] <- ev_split(jackpot = (jackpot_i * cash_coeff) - fed_taxes(jackpot_i * cash_coeff) - state_taxes(jackpot_i * cash_coeff),
+      
+      EV$ev_full_taxes[i] <- ev_split(jackpot = (jackpot_i * cash_coeff) - 
+                                                 fed_taxes(jackpot_i * cash_coeff) -
+                                                 state_taxes(jackpot_i * cash_coeff),
                                 tickets = tickets_i,
                                 max_winners = max_winners,
                                 prob_win = (1/302575350),
@@ -1204,8 +1342,12 @@ EV %>%
                                      "200m", "500m", "750m", "1b", "2b", "5b", "10b")),
          jackpot = factor(jackpot,
                           levels = c(1, 1e3, 1e6, 10e6, 20e6, 40e6, 50e6, 75e6, 100e6, 125e6, 150e6, 175e6, 200e6, 300e6,
-                                     400e6, 500e6, 750e6, 1e9, 1.5e9, 1.75e9, 2e9, 5e9, 10e9),
-                          labels = c("$1", "$1k", "$1m", "$10m", "$20m", "$40m", "$50m", "$75m", "$100m", "$125m", "$150m", "$175m", "$200m", "$300m", "$400m", "$500m", "$750m", "$1b", "$1.5b", "$1.75b", "$2b", "$5b", "$10b")),
+                                     400e6, 500e6, 600e6, 700e6, 800e6, 900e6, 1e9, 1.1e9, 1.2e9, 1.3e9, 1.4e9, 1.5e9, 
+                                     1.6e9, 1.7e9, 1.8e9, 1.9e9, 2e9, 5e9, 10e9),
+                          labels = c("$1", "$1k", "$1m", "$10m", "$20m", "$40m", "$50m", "$75m", "$100m", "$125m", "$150m",
+                                     "$175m", "$200m", "$300m", "$400m", "$500m", "$600m", "$700m", "$800m", "$900m",
+                                     "$1b", "$1.1b", "$1.2b", "$1.3b", "$1.4b", "$1.5b", "$1.6b", "$1.7b", "$1.8b", "$1.9b",
+                                      "$2b", "$5b", "$10b")),
          split = factor(split,
                         levels = c(FALSE, TRUE),
                         labels = c("Jackpots Never Split :)", "Jackpots Split :(")),
@@ -1232,17 +1374,17 @@ EV %>%
 ```{r, fig.width=15, fig.height=8}
 plot_7.2 <-
 EV_long %>% 
-  ggplot(aes(x = tickets,
-             y = jackpot,
+  ggplot(aes(y = tickets,
+             x = jackpot,
              fill = sign,
              label = ev_print)) +
   geom_raster(alpha = EV_long$alpha) +
   geom_text(color = "white",
             size = 2) +
-  geom_rect(aes(ymin = 5  - 0.5,  #which(jackpots %in% 20e6),
-                ymax = 19 + 0.5, #which(jackpots %in% 1.5e9),
-                xmin = 8  - 0.5,  #which(tickets %in% 15e6),
-                xmax = 18 + 0.5, #which(tickets %in% 750e6),
+  geom_rect(aes(xmin = 5  - 0.5,  #which(jackpots %in% 20e6), #min(lott_clean$jackpot)
+                xmax = 26 + 0.5, #which(jackpots %in% 1.5e9), #max(lott_clean$jackpot)
+                ymin = 8  - 0.5,  #which(tickets %in% 15e6), #min(lott_clean$sales)
+                ymax = 18 + 0.5, #which(tickets %in% 750e6), #max(lott_clean$sales)
                 fill = NA),
                 color = "white") +
   scale_fill_manual(values = c("red2", "green4", "grey")) +
@@ -1277,7 +1419,7 @@ ggsave(plot = plot_7.2,
 
 ## 7.2. Theoretical EV (single)
 
-```{r, fig.width=10, fig.height=8}
+```{r, fig.width=13, fig.height=10}
 
 EV_long_filtered <-
   EV_long %>% 
@@ -1291,19 +1433,19 @@ EV_long_filtered %>%
   geom_raster(alpha = EV_long_filtered$alpha) +
   geom_text(color = "white",
             size = 3) +
-  geom_rect(aes(xmin = 5  - 0.5,  #which(jackpots %in% 20e6),
-                xmax = 19 + 0.5, #which(jackpots %in% 1.5e9),
-                ymin = 8  - 0.5,  #which(tickets %in% 15e6),
-                ymax = 18 + 0.5, #which(tickets %in% 750e6),
+  geom_rect(aes(xmin = 5  - 0.5,  #which(jackpots %in% 20e6), #min(lott_clean$jackpot)
+                xmax = 26 + 0.5, #which(jackpots %in% 1.5e9), #max(lott_clean$jackpot)
+                ymin = 8  - 0.5,  #which(tickets %in% 15e6), #min(lott_clean$sales)
+                ymax = 18 + 0.5, #which(tickets %in% 750e6), #max(lott_clean$sales)
                 fill = NA),
                 color = "white") +
   scale_fill_manual(values = c("red2", "green4", "grey")) +
   labs(y = "Ticket Sales",
        x = "Advertised Jackpot Size",
-       title = paste0("Theoretical Expected Value of Lottery Ticket,",
-                      "\n as a function of:",
-                      "\n (a) Jackpot Size",
-                      "\n (b) Number of Tickets Sold")) +
+       title = paste0("Expected Value of Lottery Ticket (in $), Given:",
+                      "\n (a) Jackpot Size, ",
+                      " (b) Number of Tickets Sold",
+                      "\n (accounting for taxes & cash discount)")) +
   guides(fill = FALSE) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5),
@@ -1330,37 +1472,37 @@ lott_clean %>%
                                  max_winners = 100,
                                  prob_win = (1/302575350),
                                  method = "sum",
-                                 split = FALSE),
+                                 split = FALSE) + other_prizes,
          ev_cash_ns = ev_split(jackpot = jackpot * cash_coeff,
                                tickets = sales,
                                max_winners = 100,
                                prob_win = (1/302575350),
                                method = "sum",
-                               split = FALSE),
+                               split = FALSE) + other_prizes,
          ev_taxes_ns = ev_split(jackpot = ((jackpot * cash_coeff) - fed_taxes(jackpot * cash_coeff) - state_taxes(jackpot * cash_coeff)),
                                tickets = sales,
                                max_winners = 100,
                                prob_win = (1/302575350),
                                method = "sum",
-                               split = FALSE),
+                               split = FALSE) + other_prizes_taxes,
          ev_advert_s = ev_split(jackpot = jackpot,
                                tickets = sales,
                                max_winners = 100,
                                prob_win = (1/302575350),
                                method = "sum",
-                               split = TRUE),
+                               split = TRUE) + other_prizes,
          ev_cash_s = ev_split(jackpot = jackpot * cash_coeff,
                               tickets = sales,
                               max_winners = 100,
                               prob_win = (1/302575350),
                               method = "sum",
-                              split = TRUE),
+                              split = TRUE) + other_prizes,
          ev_taxes_s = ev_split(jackpot = ((jackpot * cash_coeff) - fed_taxes(jackpot * cash_coeff) - state_taxes(jackpot * cash_coeff)),
                               tickets = sales,
                               max_winners = 100,
                               prob_win = (1/302575350),
                               method = "sum",
-                              split = TRUE)) %>% 
+                              split = TRUE) + other_prizes) %>% 
   pivot_longer(cols = contains("ev_"),
                names_to = "ev_type",
                values_to = "ev") %>% 
@@ -1800,6 +1942,8 @@ ggsave(plot = plot_ev_panel,
 ```
 
 ## 7.11. All Positive EV Cases
+
+[note: need to amend this, given updated calculations]
 
 Note there have only ever been 7 cases where a ticket has had an expected value higher than the cost of a ticket. And this is only in fantasy cases, where we change or relax the actual lottery rules and payout structures. This is 7 out of 2016 hypothetical drawings considered (336 drawins X 6 possible scenarios for each).
 
