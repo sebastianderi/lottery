@@ -39,31 +39,14 @@ df_util
 
 # --- Analysis ---
 
-# 1. graph (concave)
-
-```{r, fig.width=10, fig.height=5}
-df_util %>% 
-  mutate(util_1 = log(money+1, base = 1.001),
-         #util_2 = (1-exp(2*money))/(1-exp(2)),
-         util_3 = money^(1/2)) %>%  
-  ggplot(aes(x = money)) +
-  geom_line(aes(y = util_1),
-            color = "red") +
-  #geom_line(aes(y = util_2),
-  #          color = "blue") +
-  geom_line(aes(y = util_3),
-            color = "green") +
-  theme_bw()
-
-```
-
-# 2. graph (linear)
+# 2. linear utility
 
 ## 2.1. make data
 
 ```{r}
-income <- seq(0, 250e3, 1e3)
-happiness <- income/200
+max_income <- 500e3
+income <- seq(0, 1, 0.01) * max_income
+happiness <- income/max(income) * 1000
 
 df_linear <- data.frame(income = income,
                         happiness = happiness)
@@ -81,15 +64,55 @@ df_linear %>%
   labs(title = "How Money Translates to Happiness",
        x = "Total Wealth ($)",
        y = "Total Happiness \n (Measured in Personal Happiness Points)") +
-  scale_y_continuous(breaks = seq(0, max(happiness), 100),
+  scale_y_continuous(breaks = seq(0, max(df_linear$happiness), 100),
                      labels = scales::comma) +
-  scale_x_continuous(breaks = seq(0, 250e3, 25e3),
+  scale_x_continuous(breaks = seq(0, 500e3, 25e3),
                      labels = scales::dollar_format()) +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0)),
+        axis.text.x = element_text(angle = 45,
+                                   hjust = 1))
 
 ```
 
+# 3. concave utility
+
+## 3.1. make data
+
+```{r}
+max_income <- 500e3
+income <- seq(0, 1, 0.01) * max_income
+happiness <- (1-((income-max_income)^4)/(max_income^4)) * 1000
+
+df_concave <- data.frame(income = income,
+                        happiness = happiness)
+
+df_concave
+```
+
+## 3.2. actually graph
+
+```{r, fig.width=10, fig.height=6}
+df_concave %>% 
+  ggplot(aes(x = income,
+             y = happiness)) +
+  geom_line() +
+  labs(title = "How Money Translates to Happiness",
+       x = "Total Wealth ($)",
+       y = "Total Happiness \n (Measured in Personal Happiness Points)") +
+  scale_y_continuous(breaks = seq(0, max(df_concave$happiness), 100),
+                     labels = scales::comma) +
+  #scale_y_continuous(limits = c(0,  1))
+  scale_x_continuous(breaks = seq(0, 500e3, 25e3),
+                     labels = scales::dollar_format()) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0)),
+        axis.text.x = element_text(angle = 45,
+                                   hjust = 1))
+
+```
 
 # --- END/MISC ---
 
