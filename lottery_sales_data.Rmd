@@ -140,13 +140,18 @@ ggsave(plot = plot_just_sales,
 ```
 
 
-## 1.3. Jackpot Percentiles (in millions)
+## 1.3. Jackpot Percentiles and Mean
 
-Jackpot sizes at various percentiles.
+Jackpot sizes at various percentiles (in millions of dollars)
 
 ```{r}
 quantile(round(lott_clean$jackpot/1e6, digits = 1), probs = c(0, 0.01, 0.05, seq(0.1, 0.9, 0.1), 0.95, 0.99, 1))
 ```
+```{r}
+mean(lott_clean$jackpot)/1e6
+```
+
+
 
 ## 1.4. Graph: Sales
 
@@ -1185,6 +1190,43 @@ state_taxes(1000e6)
 
 state_taxes(87701-4601)
 ```
+## 5.3. Average Reduction (taxes & cash)
+
+Here I will look at some basic stats about how much the jackpot is reduced by taxes and by the cash discount.
+
+```{r}
+jackpot_tax_check <-
+lott_clean %>% 
+  mutate(jackpot_taxed = jackpot - fed_taxes(jackpot) - state_taxes(jackpot),
+         jackpot_taxed_prop = jackpot_taxed / jackpot,
+         jackpot_both = (jackpot*cash_coeff) - fed_taxes(jackpot*cash_coeff) - state_taxes(jackpot*cash_coeff),
+         jackpot_both_prop = jackpot_both / jackpot,
+         jackpot_wrong_way = jackpot_taxed*cash_coeff,
+         jackpot_wrong_way_prop = jackpot_wrong_way/jackpot)
+jackpot_tax_check
+```
+```{r}
+# just taxes
+quantile(x = jackpot_tax_check$jackpot_taxed_prop,
+         probs = c(0, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99, 1))
+```
+```{r}
+# just taxes
+mean(jackpot_tax_check$jackpot_taxed_prop)
+
+```
+```{r}
+# cash and then taxes
+quantile(x = jackpot_tax_check$jackpot_both_prop,
+         probs = c(0, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99, 1))
+```
+
+```{r}
+# cash and then taxes
+mean(jackpot_tax_check$jackpot_both_prop)
+
+```
+
 
 # 6. Smaller Prizes
 
@@ -1959,5 +2001,9 @@ EV_time
 
 # END/MISC
 
+```{r}
+EV_time %>% 
+  filter(ev_type == "ev_taxes_s" & jackpot > 900e6)
+```
 
 

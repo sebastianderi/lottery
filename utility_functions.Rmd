@@ -17,6 +17,7 @@ plot_save <- FALSE
 
 ```{r}
 library(tidyverse)
+library(patchwork)
 
 ```
 
@@ -57,6 +58,7 @@ df_linear
 ## 2.2. actually graph
 
 ```{r, fig.width=10, fig.height=6}
+plot_linear <- 
 df_linear %>% 
   ggplot(aes(x = income,
              y = happiness)) +
@@ -66,13 +68,14 @@ df_linear %>%
        y = "Total Happiness \n (Measured in Personal Happiness Points)") +
   scale_y_continuous(breaks = seq(0, max(df_linear$happiness), 100),
                      labels = scales::comma) +
-  scale_x_continuous(breaks = seq(0, 500e3, 25e3),
+  scale_x_continuous(breaks = seq(0, max_income, 25e3),
                      labels = scales::dollar_format()) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5),
         axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0)),
         axis.text.x = element_text(angle = 45,
                                    hjust = 1))
+plot_linear
 
 ```
 
@@ -83,7 +86,7 @@ df_linear %>%
 ```{r}
 max_income <- 500e3
 income <- seq(0, 1, 0.01) * max_income
-happiness <- (1-((income-max_income)^4)/(max_income^4)) * 1000
+happiness <- (1-(abs(income-max_income)^2.5)/(max_income^2.5)) * 1000
 
 df_concave <- data.frame(income = income,
                         happiness = happiness)
@@ -94,6 +97,7 @@ df_concave
 ## 3.2. actually graph
 
 ```{r, fig.width=10, fig.height=6}
+plot_concave <-
 df_concave %>% 
   ggplot(aes(x = income,
              y = happiness)) +
@@ -104,7 +108,74 @@ df_concave %>%
   scale_y_continuous(breaks = seq(0, max(df_concave$happiness), 100),
                      labels = scales::comma) +
   #scale_y_continuous(limits = c(0,  1))
-  scale_x_continuous(breaks = seq(0, 500e3, 25e3),
+  scale_x_continuous(breaks = seq(0, max_income, 25e3),
+                     labels = scales::dollar_format()) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0)),
+        axis.text.x = element_text(angle = 45,
+                                   hjust = 1))
+plot_concave
+
+```
+
+# 4. convex utility
+
+## 4.1. make data
+
+going to cheat here and kind of (try to) flip the concave utility function over a 45 degree diagonal line
+
+```{r}
+# linear utility
+max_income <- 500e3
+income <- seq(0, 1, 0.01) * max_income
+happiness <- income/max(income) * 1000
+
+df_linear <- data.frame(income = income,
+                        happiness = happiness)
+
+df_linear
+
+# concave utility
+max_income <- 500e3
+happiness <- (1-(abs(income-max_income)^2.5)/(max_income^2.5)) * 1000
+
+df_concave <- data.frame(income = income,
+                        happiness = happiness)
+
+df_concave
+
+# convex utility
+df_convex <- data.frame(income = income,
+                        neg_income = -income+max_income,
+                        happiness = df_concave$happiness,
+                        happiness_trans1 = -df_concave$happiness + 1000)
+
+df_convex
+
+```
+## 4.2. test graph (all 4 quadrants)
+
+```{r, fig.width=10, fig.height=6}
+df_convex %>% 
+  ggplot() +
+  geom_line(aes(x = income,
+                y = happiness),
+            color = "black") +
+  geom_line(aes(x = neg_income,
+                y = happiness_trans1),
+            color = "red") +
+  #geom_line(aes(y = happiness_trans2),
+  #          color = "blue") +
+  labs(title = "How Money Translates to Happiness",
+       x = "Total Wealth ($)",
+       y = "Total Happiness \n (Measured in Personal Happiness Points)") +
+  scale_y_continuous(breaks = seq(-max(abs(df_convex$happiness)), max(abs(df_convex$happiness)), 100),
+                     limits = c(-max(abs(df_convex$happiness)), max(abs(df_convex$happiness))),
+                     labels = scales::comma) +
+  #scale_y_continuous(limits = c(0,  1))
+  scale_x_continuous(breaks = seq(-max_income, max_income, 25e3),
+                     limits = c(-max_income, max_income),
                      labels = scales::dollar_format()) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5),
@@ -113,6 +184,49 @@ df_concave %>%
                                    hjust = 1))
 
 ```
+
+## 4.3. actually graph
+
+```{r, fig.width=10, fig.height=6}
+plot_convex <- 
+df_convex %>% 
+  ggplot(aes(x = neg_income,
+             y = happiness_trans1)) +
+  geom_line() +
+  labs(title = "How Money Translates to Happiness",
+       x = "Total Wealth ($)",
+       y = "Total Happiness \n (Measured in Personal Happiness Points)") +
+  scale_y_continuous(breaks = seq(0, max(df_convex$happiness), 100),
+                     labels = scales::comma) +
+  #scale_y_continuous(limits = c(0,  1))
+  scale_x_continuous(breaks = seq(0, max_income, 25e3),
+                     labels = scales::dollar_format()) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0)),
+        axis.text.x = element_text(angle = 45,
+                                   hjust = 1))
+plot_convex
+
+```
+
+# 5. all plots together
+
+## 5.1. old way
+
+```{r, fig.width=10, fig.height=6}
+plot_linear + plot_concave + plot_convex
+```
+
+## 5.1. new way
+
+```{r, fig.width=15, fig.height=6}
+(plot_linear | plot_concave | plot_convex)
+```
+
+
+# END/MISC
+
 
 # --- END/MISC ---
 
