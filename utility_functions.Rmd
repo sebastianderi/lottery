@@ -27,7 +27,7 @@ library(tidyverse)
 
 ```{r}
 # make vector of possible incomes
-money <- seq(0, 1e6, 1e3)
+money <- seq(0, 100, 1)
 
 # turn into data frame
 df_util <- data.frame(money)
@@ -39,16 +39,57 @@ df_util
 
 # --- Analysis ---
 
-# 1. graph
+# 1. graph (concave)
 
-```{r}
+```{r, fig.width=10, fig.height=5}
 df_util %>% 
-  mutate(util_1 = log(money)) %>% 
-  ggplot(aes(x = money,
-             y = util_1)) +
-  geom_line()
+  mutate(util_1 = log(money+1, base = 1.001),
+         #util_2 = (1-exp(2*money))/(1-exp(2)),
+         util_3 = money^(1/2)) %>%  
+  ggplot(aes(x = money)) +
+  geom_line(aes(y = util_1),
+            color = "red") +
+  #geom_line(aes(y = util_2),
+  #          color = "blue") +
+  geom_line(aes(y = util_3),
+            color = "green") +
+  theme_bw()
 
 ```
+
+# 2. graph (linear)
+
+## 2.1. make data
+
+```{r}
+income <- seq(0, 250e3, 1e3)
+happiness <- income/200
+
+df_linear <- data.frame(income = income,
+                        happiness = happiness)
+
+df_linear
+```
+
+## 2.2. actually graph
+
+```{r, fig.width=10, fig.height=6}
+df_linear %>% 
+  ggplot(aes(x = income,
+             y = happiness)) +
+  geom_line() +
+  labs(title = "How Money Translates to Happiness",
+       x = "Total Wealth ($)",
+       y = "Total Happiness \n (Measured in Personal Happiness Points)") +
+  scale_y_continuous(breaks = seq(0, max(happiness), 100),
+                     labels = scales::comma) +
+  scale_x_continuous(breaks = seq(0, 250e3, 25e3),
+                     labels = scales::dollar_format()) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
 
 # --- END/MISC ---
 
