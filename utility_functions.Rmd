@@ -45,7 +45,7 @@ df_util
 ## 2.1. make data
 
 ```{r}
-max_income <- 500e3
+max_income <- 200e3
 income <- seq(0, 1, 0.01) * max_income
 happiness <- income/max(income) * 1000
 
@@ -65,7 +65,7 @@ df_linear %>%
   geom_line() +
   labs(title = "How Money Translates to Happiness",
        x = "Total Wealth ($)",
-       y = "Total Happiness \n (Measured in Personal Happiness Points)") +
+       y = "Total Happiness") +
   scale_y_continuous(breaks = seq(0, max(df_linear$happiness), 100),
                      labels = scales::comma) +
   scale_x_continuous(breaks = seq(0, max_income, 25e3),
@@ -84,7 +84,7 @@ plot_linear
 ## 3.1. make data
 
 ```{r}
-max_income <- 500e3
+max_income <- 200e3
 income <- seq(0, 1, 0.01) * max_income
 happiness <- (1-(abs(income-max_income)^2.5)/(max_income^2.5)) * 1000
 
@@ -127,7 +127,7 @@ going to cheat here and kind of (try to) flip the concave utility function over 
 
 ```{r}
 # linear utility
-max_income <- 500e3
+max_income <- 200e3
 income <- seq(0, 1, 0.01) * max_income
 happiness <- income/max(income) * 1000
 
@@ -137,7 +137,7 @@ df_linear <- data.frame(income = income,
 df_linear
 
 # concave utility
-max_income <- 500e3
+max_income <- 200e3
 happiness <- (1-(abs(income-max_income)^2.5)/(max_income^2.5)) * 1000
 
 df_concave <- data.frame(income = income,
@@ -222,6 +222,158 @@ plot_linear + plot_concave + plot_convex
 
 ```{r, fig.width=15, fig.height=6}
 (plot_linear | plot_concave | plot_convex)
+```
+
+
+# 6. Plots w/ Shifts
+
+## 6.1. linear
+
+```{r, fig.width=10, fig.height=6}
+# presets
+mid_x <- 100e3
+mid_y <- df_linear[df_linear$income == mid_x,]$happiness
+mid_color <- "gray26"
+
+low_x <- 50e3
+low_y <- df_linear[df_linear$income == low_x,]$happiness
+low_color <- "red3"
+low_shift <- 5e3
+
+high_x <- 150e3
+high_y <- df_linear[df_linear$income == high_x,]$happiness
+high_color <- "green4"
+high_shift <- 5e3
+
+
+df_linear %>% 
+  ggplot(aes(x = income,
+             y = happiness)) +
+  geom_line() +
+  # middle
+  geom_segment(aes(x = mid_x, xend = mid_x, y = 0, yend = mid_y),
+               color = mid_color, linetype = "dotted", size = 1) +
+  geom_segment(aes(x = 0, xend = mid_x, y = mid_y, yend = mid_y),
+               color = mid_color, linetype = "dotted", size = 1) +
+  # low
+  geom_segment(aes(x = low_x, xend = low_x, y = 0, yend = low_y),
+               color = low_color, linetype = "solid", size = 1) +
+  geom_segment(aes(x = 0, xend = low_x, y = low_y, yend = low_y),
+               color = low_color, linetype = "solid", size = 1) +
+  geom_segment(aes(x = mid_x - low_shift, xend = low_x + low_shift , y = low_y/2, yend = low_y/2),
+                  arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+               color = low_color) +
+  annotate(geom = "text", x = low_x + (mid_x-low_x)/2, y = low_y - 10, label = "Lose $50K",
+           angle = 0, size = 3.5, color = low_color) +
+  geom_segment(aes(x = -10e3, xend = -10e3 , y = mid_y - 15, yend = low_y + 15),
+                  arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+               color = low_color) +
+  annotate(geom = "text", x = 25e3, y = low_y + (mid_y-low_y)/2, label = "-100 Happiness",
+           angle = 0, size = 3.5, color = low_color) +
+  # high
+  geom_segment(aes(x = high_x, xend = high_x, y = 0, yend = high_y),
+               color = high_color, linetype = "solid", size = 1) +
+  geom_segment(aes(x = 0, xend = high_x, y = high_y, yend = high_y),
+               color = high_color, linetype = "solid", size = 1) +
+  geom_segment(aes(x = mid_x + high_shift, xend = high_x - low_shift , y = low_y/2, yend = low_y/2),
+                  arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+               color = high_color) +
+  annotate(geom = "text", x = high_x - (high_x-mid_x)/2, y = low_y - 10, label = "Gain $50K",
+           angle = 0, size = 3.5, color = high_color) +
+  geom_segment(aes(x = -10e3, xend = -10e3 , y = mid_y + 15, yend = high_y - 15),
+                  arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+               color = high_color) +
+  annotate(geom = "text", x = 25e3, y = high_y - (high_y - mid_y)/2, label = "+100 Happiness",
+           angle = 0, size = 3.5, color = high_color) +
+  # naming & formatting
+  labs(title = "How Money Translates to Happiness",
+       x = "Total Wealth ($)",
+       y = "Total Happiness") +
+  scale_y_continuous(breaks = seq(0, max(df_linear$happiness), 100),
+                     labels = scales::comma) +
+  scale_x_continuous(breaks = seq(0, max_income, 25e3),
+                     labels = scales::dollar_format()) +
+  coord_cartesian(xlim = c(0, max(df_linear$income))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0)),
+        axis.text.x = element_text(angle = 45,
+                                   hjust = 1))
+
+```
+
+## 6.2. concave
+
+```{r, fig.width=10, fig.height=6}
+# presets
+mid_x <- 100e3
+mid_y <- (1-(abs(mid_x-max_income)^2.5)/(max_income^2.5)) * 1000  # NOTE: max_income set elsewhere
+mid_color <- "gray26"
+
+low_x <- 50e3
+low_y <- (1-(abs(low_x-max_income)^2.5)/(max_income^2.5)) * 1000  # NOTE: max_income set elsewhere
+low_color <- "red3"
+low_shift <- 5e3
+
+high_x <- 150e3
+high_y <- (1-(abs(high_x-max_income)^2.5)/(max_income^2.5)) * 1000  # NOTE: max_income set elsewhere
+high_color <- "green4"
+high_shift <- 5e3
+
+
+df_concave %>% 
+  ggplot(aes(x = income,
+             y = happiness)) +
+  geom_line() +
+  # middle
+  geom_segment(aes(x = mid_x, xend = mid_x, y = 0, yend = mid_y),
+               color = mid_color, linetype = "dotted", size = 1) +
+  geom_segment(aes(x = 0, xend = mid_x, y = mid_y, yend = mid_y),
+               color = mid_color, linetype = "dotted", size = 1) +
+  # low
+  geom_segment(aes(x = low_x, xend = low_x, y = 0, yend = low_y),
+               color = low_color, linetype = "solid", size = 1) +
+  geom_segment(aes(x = 0, xend = low_x, y = low_y, yend = low_y),
+               color = low_color, linetype = "solid", size = 1) +
+  geom_segment(aes(x = mid_x - low_shift, xend = low_x + low_shift , y = low_y/2, yend = low_y/2),
+                  arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+               color = low_color) +
+  annotate(geom = "text", x = low_x + (mid_x-low_x)/2, y = low_y - 70, label = "Lose $50K",
+           angle = 0, size = 3.5, color = low_color) +
+  geom_segment(aes(x = -10e3, xend = -10e3 , y = mid_y - 15, yend = low_y + 15),
+                  arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+               color = low_color) +
+  annotate(geom = "text", x = 25e3, y = low_y + (mid_y-low_y)/2, label = paste0("-", round(mid_y-low_y, 0)," Happiness"),
+           angle = 0, size = 3.5, color = low_color) +
+  # high
+  geom_segment(aes(x = high_x, xend = high_x, y = 0, yend = high_y),
+               color = high_color, linetype = "solid", size = 1) +
+  geom_segment(aes(x = 0, xend = high_x, y = high_y, yend = high_y),
+               color = high_color, linetype = "solid", size = 1) +
+  geom_segment(aes(x = mid_x + high_shift, xend = high_x - low_shift , y = low_y/2, yend = low_y/2),
+                  arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+               color = high_color) +
+  annotate(geom = "text", x = high_x - (high_x-mid_x)/2, y = low_y - 70, label = "Gain $50K",
+           angle = 0, size = 3.5, color = high_color) +
+  geom_segment(aes(x = -10e3, xend = -10e3 , y = mid_y + 15, yend = high_y - 15),
+                  arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+               color = high_color) +
+  annotate(geom = "text", x = 25e3, y = high_y - (high_y - mid_y)/2, label = paste0("+", round(high_y-mid_y, 0)," Happiness"),
+           angle = 0, size = 3.5, color = high_color) +
+  # naming & formatting
+  labs(title = "How Money Translates to Happiness",
+       x = "Total Wealth ($)",
+       y = "Total Happiness") +
+  scale_y_continuous(breaks = seq(0, max(df_concave$happiness), 100),
+                     labels = scales::comma) +
+  #scale_y_continuous(limits = c(0,  1))
+  scale_x_continuous(breaks = seq(0, max_income, 25e3),
+                     labels = scales::dollar_format()) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0)),
+        axis.text.x = element_text(angle = 45,
+                                   hjust = 1))
 ```
 
 
