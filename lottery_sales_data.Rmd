@@ -174,6 +174,13 @@ Total ticket sales at various percentiles.
 quantile(round(lott_clean$sales/1e6, digits = 1), probs = c(0, 0.01, 0.05, seq(0.1, 0.9, 0.1), 0.95, 0.99, 1))
 ```
 
+Average
+
+```{r}
+mean(lott_clean$sales)/1e6
+```
+
+
 ## 1.6. Correlation
 
 Just calculate the correlation between jackpot size and total sales. Very high.
@@ -569,7 +576,7 @@ dat_split_mod %>%
   scale_color_manual(values = c("red", "green4", "blue4", "dodgerblue2", "skyblue", "turquoise1")) +
   labs(x = "Number of Tickets Sold \n (millions)",
        y = "Probability of This Many Winners",
-       title = "Odds of a Split Pot v. Number of Tickets Sold",
+       title = "",
        color = "Numbers of Winners") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0,
@@ -601,7 +608,7 @@ dat_split_mod %>%
   scale_color_manual(values = c("red", "green4")) +
   labs(x = "Number of Tickets Sold \n (millions)",
        y = "Probability of This Many Winners",
-       title = "Odds of a Split Pot v. Number of Tickets Sold",
+       title = "",
        color = "Numbers of Winners") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0,
@@ -1461,7 +1468,7 @@ ggsave(plot = plot_7.2,
 
 ## 7.2. Theoretical EV (single)
 
-```{r, fig.width=13, fig.height=10}
+```{r, fig.width=15, fig.height=11}
 
 EV_long_filtered <-
   EV_long %>% 
@@ -1474,7 +1481,7 @@ EV_long_filtered %>%
              label = format(ev_print, digits = 2))) +
   geom_raster(alpha = EV_long_filtered$alpha) +
   geom_text(color = "white",
-            size = 3) +
+            size = 3.5) +
   geom_rect(aes(xmin = 5  - 0.5,  #which(jackpots %in% 20e6), #min(lott_clean$jackpot)
                 xmax = 26 + 0.5, #which(jackpots %in% 1.5e9), #max(lott_clean$jackpot)
                 ymin = 8  - 0.5,  #which(tickets %in% 15e6), #min(lott_clean$sales)
@@ -1492,8 +1499,13 @@ EV_long_filtered %>%
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(angle = 90,
-                                   vjust = 0.25),
-        axis.text.y = element_text(vjust = 0.25),
+                                   vjust = 0.25,
+                                   size = 12),
+        axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0),
+                                    size = 14),
+        axis.text.y = element_text(vjust = 0.25,
+                                   size = 11),
+        axis.title.y = element_text(size = 14),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
@@ -1501,6 +1513,65 @@ EV_long_filtered %>%
 
 ```
 
+
+```{r, fig.width=15, fig.height=11}
+
+EV_long_filtered <-
+  EV_long %>% 
+    filter(split == "Jackpots Split :(" & type == "Cash Value (Fed & State Taxes)") 
+
+EV_long_filtered %>% 
+  ggplot(aes(y = tickets,
+             x = jackpot,
+             fill = sign,
+             label = format(ev_print, digits = 2))) +
+  geom_raster(alpha = EV_long_filtered$alpha) +
+  geom_text(color = "white",
+            size = 3.5) +
+  # cross-hairs
+  geom_segment(aes(x = 0, xend = 20.5, y = 11, yend = 11), linetype = "dotted", size = 1) +
+  geom_segment(aes(x = 21.5, xend = length(jackpots),
+                   y = 11, yend = 11), linetype = "dotted", size = 1) +
+  geom_segment(aes(x = 21, xend = 21, y = 0, yend = 10.5), linetype = "dotted", size = 1) +
+  geom_segment(aes(x = 21, xend = 21, y = 11.5, yend = 22), linetype = "dotted", size = 1) +
+  geom_rect(aes(xmin = 20.5,  
+                xmax = 21.5,
+                ymin = 10.5, 
+                ymax = 11.5,
+                fill = NA),
+                color = "black",
+            linetype = "dotted",
+            size = 1) +
+  geom_rect(aes(xmin = 5  - 0.5,  #which(jackpots %in% 20e6), #min(lott_clean$jackpot)
+                xmax = 26 + 0.5, #which(jackpots %in% 1.5e9), #max(lott_clean$jackpot)
+                ymin = 8  - 0.5,  #which(tickets %in% 15e6), #min(lott_clean$sales)
+                ymax = 18 + 0.5, #which(tickets %in% 750e6), #max(lott_clean$sales)
+                fill = NA),
+                color = NA) + #HACKY SOLUTION: just make it invisible (colors get messed up for some reason otherwise)
+  scale_fill_manual(values = c("red2", "green4", "grey")) +
+  labs(y = "Ticket Sales",
+       x = "Advertised Jackpot Size",
+       title = paste0("Expected Value of Lottery Ticket (in $), Given:",
+                      "\n (a) Jackpot Size, ",
+                      " (b) Number of Tickets Sold",
+                      "\n (after accounting for taxes & cash discount)")) +
+  guides(fill = FALSE) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 90,
+                                   vjust = 0.25,
+                                   size = 12),
+        axis.title.x = element_text(margin = margin(t = 10, b = 0, r = 0, l = 0),
+                                    size = 14),
+        axis.text.y = element_text(vjust = 0.25,
+                                   size = 11),
+        axis.title.y = element_text(size = 14),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+
+
+
+```
 
 ## 7.3. EV over time
 
