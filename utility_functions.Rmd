@@ -1,8 +1,13 @@
 ---
-title: "Lottery Analysis"
-author: sebastian deri
-date: jan-feb 2021
-output: html_notebook
+title: "Utility Functions"
+subtitle: "Risk_=-Neutral, Risk-Averse, Risk-Seeking"
+author: "Sebastian Deri"
+date: "January-March 2021"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
 ---
 
 # --- Settings ---
@@ -449,9 +454,6 @@ df_convex %>%
                                    hjust = 1))
 
 ```
-
-
-# END/MISC
 
 
 # --- END/MISC ---

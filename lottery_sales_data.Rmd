@@ -2,7 +2,7 @@
 title: "Lottery Analysis"
 subtitle: "Mega Millions Expected Value"
 author: "Sebastian Deri"
-date: "January-February 2021"
+date: "January-March 2021"
 output:
   html_document:
     df_print: paged
