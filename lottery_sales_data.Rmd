@@ -281,13 +281,17 @@ The goal in this section is to calculate the odds of splitting the lottery jackp
 ## 3.1. Function: odds of split pot
 
 inputs:
+
 * number of potential winners
 * number of tickets sold
 * probability of winning jackpot
+
 output:
+
 * odd of this many people splitting the pot
 
 See Bill Butler's website for formal calculations. (It's just the binomial distribution.)
+
 * http://www.durangobill.com/MegaMillionsOdds.html
 
 ```{r}
@@ -998,6 +1002,8 @@ cash_coeff
 
 * source: https://www.nerdwallet.com/article/taxes/federal-income-tax-brackets
 * source: https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments-for-tax-year-2020
+
+Note: I used kind of recursive functions to calculate taxes here. This is not the most computationally efficient thing to do here. (For any income, you should only need to do 2 operations: add fixed sum to pay from brackets below and proportion for top bracket. But that at least requires a one time cost of calculating the fixed values at every bracket. This recursive function (1) is more fun to think about, and (2) avoid having to calculate and manually type in the fixed sum for any given bracket. I just typed in the income brackets.)
 
 ```{r}
 # recursive function to calculate taxes
@@ -1845,7 +1851,7 @@ EV_time %>%
                               ev_type == "ev_taxes_s" ~ "With Taxes & Cash Discount"),
          ev_type = factor(ev_type,
                           levels = c("As Advertised (No Cash Discount, No Taxes)",
-                                     "With Cash Discount Only",
+                                     "With Cash Discount Only (No Taxes)",
                                      "With Taxes & Cash Discount"))) %>% 
 ggplot(aes(x = jackpot,
            y = ev,
@@ -1952,10 +1958,10 @@ EV_time %>%
                              ev_calc == "taxes" ~ "With Taxes & Cash Discount"),
          ev_calc = factor(ev_calc,
                           levels = c("As Advertised (No Cash Discount, No Taxes)",
-                                     "With Cash Discount Only",
+                                     "With Cash Discount Only (No Taxes)",
                                      "With Taxes & Cash Discount")),
          split = case_when(split == TRUE ~ "If Multiple Winners: Pot Gets Split",
-                           split == FALSE ~ "If Multiple Winners: Each Person Gets Advertised Jackpot Value")) %>% 
+                           split == FALSE ~ "If Multiple Winners: Each Person Gets Full Pot Value")) %>% 
 ggplot(aes(x = jackpot,
            y = ev,
            color = ev_calc)) +
